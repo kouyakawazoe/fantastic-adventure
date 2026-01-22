@@ -1,0 +1,42 @@
+import numpy as np
+from sklearn.decomposition import NMF
+
+class EMGAnalyzer:
+    def __init__(self, emg_data, sampling_rate):
+        self.data = emg_data  # プリプロセス済みの整流・フィルタ後データ
+        self.fs = sampling_rate
+
+    def get_onset_duration(self, channel, threshold_sd=3):
+        """OnsetとDurationの算出"""
+        baseline = self.data[:self.fs, channel] # 最初の1秒をベースラインと仮定
+        threshold = np.mean(baseline) + threshold_sd * np.std(baseline)
+        active_indices = np.where(self.data[:, channel] > threshold)[0]
+        # ... 連続性の判定ロジック ...
+        onset = active_indices[0] / self.fs
+        duration = (active_indices[-1] - active_indices[0]) / self.fs
+        return onset, duration
+
+    def calculate_cci(self, ch_agonist, ch_antagonist):
+        """CCI (Co-contraction Index) の算出"""
+        emg1 = self.data[:, ch_agonist]
+        emg2 = self.data[:, ch_antagonist]
+        low_act = np.minimum(emg1, emg2)
+        high_act = np.maximum(emg1, emg2)
+        cci = np.trapz((low_act / (high_act + 1e-6)) * (low_act + high_act))
+        return cci
+
+    def extract_synergies(self, n_components=4):
+        """NMFによる筋シナジー抽出"""
+        model = NMF(n_components=n_components, init='random', random_state=0)
+        W = model.fit_transform(self.data) # シナジー構造
+        H = model.components_              # 時間的活動パターン
+        return W, H
+
+    def asymmetry_index(self, val_r, val_l):
+        """左右非対称性指数の算出"""
+        return abs(val_r - val_l) / (val_r + val_l) * 100
+
+# 使用イメージ
+# analyzer = EMGAnalyzer(filtered_emg, 1000)
+# onset, dur = analyzer.get_onset_duration(ch=0)
+# cci_val = analyzer.calculate_cci(ch_agonist=0, ch_antagonist=1)
