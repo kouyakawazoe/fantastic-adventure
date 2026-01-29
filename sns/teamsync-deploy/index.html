@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeamSync Pro - AI Todo & Report</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Marked.js -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Noto Sans JP', 'sans-serif'] },
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#64748B',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        bgLight: '#F8FAFC',
+                        private: '#8B5CF6',
+                        ai: '#8B5CF6'
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .task-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; z-index: 10; }
+        .task-card:hover { 
+            transform: translateY(-4px) scale(1.02); 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            z-index: 50;
+        }
+        .task-card .expanded-content { 
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            opacity: 0;
+        }
+        .task-card:hover .expanded-content { 
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f1f5f9;
+        }
+        .toast-enter { animation: slideInRight 0.3s ease-out forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .nav-item.active { background-color: #EFF6FF; color: #3B82F6; font-weight: 700; border-right: 3px solid #3B82F6; }
+        .nav-item.active-private { background-color: #F5F3FF; color: #8B5CF6; font-weight: 700; border-right: 3px solid #8B5CF6; }
+        
+        /* ミニカレンダー用スタイル */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+        .calendar-day { aspect-ratio: 1; display: flex; items-center: center; justify-content: center; font-size: 0.75rem; cursor: pointer; border-radius: 9999px; }
+        .calendar-day:hover { background-color: #f1f5f9; }
+        .calendar-day.active { background-color: #3B82F6; color: white; font-weight: bold; border: none; }
+        .calendar-day.today { border: 2px solid #3B82F6; color: #3B82F6; font-weight: 900; }
+        .calendar-day.holiday { color: #EF4444; background-color: #FEF2F2; }
+        .calendar-day.other-month { color: #cbd5e1; }
+
+        /* モバイル対応 */
+        @media (max-width: 768px) {
+            .sidebar-open { transform: translateX(0) !important; }
+            aside { position: fixed; top: 0; left: 0; bottom: 0; transform: translateX(-100%); transition: transform 0.3s ease; width: 280px !important; z-index: 100; }
+            .mobile-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 90; display: none; }
+            .mobile-overlay.active { display: block; }
+            .task-card:hover { transform: none; }
+            #teamBoardContainer { flex-direction: column; overflow-x: hidden; }
+            .w-\[450px\] { width: 100% !important; }
+        }
+    </style>
+</head>
+<body class="bg-bgLight text-slate-800 font-sans h-screen flex overflow-hidden">
+
+    <!-- サイドバー -->
+    <aside id="sidebar" class="w-64 bg-white border-r border-gray-200 flex flex-col z-10 flex-shrink-0">
+        <div class="h-16 flex items-center px-6 border-b border-gray-200 bg-white justify-between">
+            <div class="text-xl font-bold text-primary flex items-center gap-2">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>TeamSync <span class="text-xs font-normal text-slate-400">Pro</span></span>
+            </div>
+            <button onclick="app.toggleSidebar()" class="md:hidden text-slate-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+        
+        <!-- ミニカレンダー -->
+        <div class="p-4 border-b border-gray-100">
+            <div class="flex items-center justify-between mb-4 px-1">
+                <span id="calendarMonthDisplay" class="text-sm font-bold text-slate-700">2026年1月</span>
+                <div class="flex gap-1">
+                    <button onclick="app.changeCalendarMonth(-1)" class="p-1 hover:bg-gray-100 rounded text-slate-500"><i class="fa-solid fa-chevron-left text-[10px]"></i></button>
+                    <button onclick="app.changeCalendarMonth(1)" class="p-1 hover:bg-gray-100 rounded text-slate-500"><i class="fa-solid fa-chevron-right text-[10px]"></i></button>
+                </div>
+            </div>
+            <div class="calendar-grid mb-1">
+                <div class="text-center text-[10px] font-bold text-slate-400 py-1">日</div>
+                <div class="text-center text-[10px] font-bold text-slate-400 py-1">月</div>
+                <div class="text-center text-[10px] font-bold text-slate-400 py-1">火</div>
+                <div class="text-center text-[10px] font-bold text-slate-400 py-1">水</div>
+                <div class="text-center text-[10px] font-bold text-slate-400 py-1">木</div>
+                <div class="text-center text-[10px] font-bold text-slate-400 py-1">金</div>
+                <div class="text-center text-[10px] font-bold text-slate-400 py-1">土</div>
+            </div>
+            <div id="miniCalendarBody" class="calendar-grid">
+                <!-- JSで生成 -->
+            </div>
+        </div>
+
+        <nav class="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
+            <button onclick="app.switchView('team')" id="nav-team" class="nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-r-full transition-colors text-left text-sm">
+                <i class="fa-solid fa-calendar-day w-5 text-center"></i> タスクボード
+            </button>
+            <button onclick="app.switchView('private')" id="nav-private" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-r-full text-slate-600 hover:bg-gray-50 transition-colors text-left text-sm">
+                <i class="fa-solid fa-lock w-5 text-center"></i> マイタスク (個人)
+            </button>
+            <button onclick="app.switchView('report')" id="nav-report" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-r-full text-slate-600 hover:bg-gray-50 transition-colors text-left text-sm">
+                <i class="fa-solid fa-file-lines w-5 text-center"></i> 日報・レポート
+            </button>
+            <button onclick="app.switchView('members')" id="nav-members" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-r-full text-slate-600 hover:bg-gray-50 transition-colors text-left text-sm">
+                <i class="fa-solid fa-users w-5 text-center"></i> メンバー管理
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-gray-200 bg-gray-50">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">Me</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-slate-900 truncate">ログインユーザー</p>
+                    <p class="text-xs text-slate-500 truncate">localStorage保存中</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <div id="mobileOverlay" class="mobile-overlay" onclick="app.toggleSidebar()"></div>
+        <!-- ヘッダー -->
+        <header class="bg-white border-b border-gray-200 shadow-sm z-20 flex-shrink-0 h-16 flex items-center justify-between px-6">
+            <div class="flex items-center gap-4">
+                <button onclick="app.toggleSidebar()" class="md:hidden text-slate-500 hover:bg-gray-100 p-2 rounded-lg transition-colors"><i class="fa-solid fa-bars text-xl"></i></button>
+                
+                <!-- 日付ナビゲーション -->
+                <div class="flex items-center gap-2">
+                    <button onclick="app.resetDate()" class="px-4 py-1.5 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors">今日</button>
+                    <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                        <button onclick="app.changeDate(-1)" class="p-1.5 px-3 text-slate-500 hover:text-slate-800 hover:bg-white rounded-md transition-all"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div class="relative flex items-center gap-2 px-4 font-bold text-slate-700 select-none min-w-[180px] justify-center cursor-pointer hover:text-primary transition-colors">
+                            <i class="fa-regular fa-calendar text-slate-400"></i>
+                            <span id="currentDateDisplay">--</span>
+                            <input type="date" id="hiddenDatePicker" class="absolute inset-0 opacity-0 cursor-pointer" onchange="app.setDate(this.value)">
+                        </div>
+                        <button onclick="app.changeDate(1)" class="p-1.5 px-3 text-slate-500 hover:text-slate-800 hover:bg-white rounded-md transition-all"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                </div>
+
+                <div id="viewTitle" class="hidden md:flex items-center gap-2 text-slate-400 font-medium text-sm ml-4 border-l border-gray-200 pl-4">
+                    <!-- JSで設定 -->
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="app.openTaskModal()" class="hidden sm:flex items-center gap-2 bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95">
+                    <i class="fa-solid fa-plus"></i> タスク追加
+                </button>
+                <!-- API設定ボタン -->
+                <button onclick="document.getElementById('apiSettingModal').classList.remove('hidden')" class="text-slate-400 hover:text-slate-600 p-2" title="Gemini API設定">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- コンテンツエリア -->
+        <div class="flex-1 overflow-hidden relative bg-bgLight flex flex-col">
+            
+            <!-- コマンド入力バー -->
+            <div class="px-6 py-3 bg-white border-b border-gray-200">
+                <div class="max-w-4xl flex items-center gap-3 bg-slate-50 border border-gray-200 rounded-xl px-4 py-2 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+                    <i class="fa-solid fa-terminal text-slate-400"></i>
+                    <input type="text" id="magicCommandInput" 
+                        placeholder="コマンド入力 (例: 明日 10:00 会議, 1/30 15:00 川添さんに連絡)" 
+                        class="flex-1 bg-transparent border-none outline-none text-sm text-slate-700"
+                        onkeydown="if(event.key==='Enter') app.processMagicCommand(this.value)">
+                    <span class="text-[10px] text-slate-400 bg-white border border-gray-200 px-1.5 py-0.5 rounded shadow-sm">Enter で実行</span>
+                </div>
+            </div>
+
+            <!-- 1. チームタスクボード -->
+            <div id="view-team" class="flex-1 overflow-x-auto overflow-y-hidden p-6 transition-opacity duration-300">
+                <div id="teamBoardContainer" class="h-full flex gap-6">
+                    <!-- JSでメンバーごとのカラムを生成 -->
+                </div>
+            </div>
+
+            <!-- 2. プライベート (個人タスク & メモ) -->
+            <div id="view-private" class="hidden flex-1 overflow-y-auto p-6 transition-opacity duration-300">
+                <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                    <!-- 個人TODO -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col h-[calc(100vh-220px)]">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg text-slate-700 flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-private"></i> 今日の個人TODO
+                            </h3>
+                            <div class="flex gap-2">
+                                <select id="newPrivateTodoCategory" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none bg-gray-50 focus:border-private">
+                                    <!-- JSで生成 -->
+                                </select>
+                                <input type="text" id="newPrivateTodoInput" placeholder="新しいタスク..." class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-private focus:ring-1 focus:ring-private transition-all w-48">
+                                <button onclick="app.addPrivateTodo()" class="bg-private text-white rounded-lg px-3 py-1.5 text-sm hover:bg-purple-600 transition-colors"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
+                        <div id="privateCategoryTabs" class="flex gap-2 mb-4 overflow-x-auto pb-2">
+                            <!-- JSで生成 -->
+                        </div>
+                        <ul id="privateTodoList" class="space-y-2 overflow-y-auto flex-1 pr-2">
+                            <!-- JSで生成 -->
+                        </ul>
+                    </div>
+
+                    <!-- 個人的なメモ -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col h-[calc(100vh-220px)]">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg text-slate-700 flex items-center gap-2">
+                                <i class="fa-regular fa-note-sticky text-yellow-500"></i> 個人的なメモ
+                            </h3>
+                        </div>
+                        <div class="flex-1 flex flex-col gap-4">
+                            <div id="privateNoteList" class="flex-1 overflow-y-auto space-y-4 pr-2">
+                                <!-- JSで生成 -->
+                            </div>
+                            <div class="mt-auto pt-4 border-t border-gray-100">
+                                <textarea id="newNoteInput" class="w-full border border-gray-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-yellow-200 outline-none resize-none h-20" placeholder="メモを入力... (Shift+Enterで保存)"></textarea>
+                                <div class="flex justify-end mt-2">
+                                    <button onclick="app.addPrivateNote()" class="bg-slate-800 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-900 transition-colors">メモを保存</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. レポート (日報) -->
+            <div id="view-report" class="hidden flex-1 overflow-y-auto p-6 bg-slate-50 transition-opacity duration-300">
+                <div class="max-w-4xl mx-auto space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-slate-800" id="reportDateTitle">--月--日のレポート</h2>
+                                <p class="text-slate-500 text-sm mt-1">AIがタスク状況を自動集計しました。次回のアクションプランを入力してください。</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-3xl font-bold text-primary" id="reportProgress">0%</div>
+                                <div class="text-xs text-slate-400 font-bold uppercase">完了率</div>
+                            </div>
+                        </div>
+
+                        <!-- 自動集計エリア -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div class="bg-green-50 rounded-lg p-4 border border-green-100">
+                                <h4 class="font-bold text-green-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-check-circle"></i> 達成したこと (Done)</h4>
+                                <ul id="reportDoneList" class="space-y-2 text-sm text-green-900"></ul>
+                            </div>
+                            <div class="bg-orange-50 rounded-lg p-4 border border-orange-100">
+                                <h4 class="font-bold text-orange-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-clock"></i> 未完了・進行中 (Todo/Doing)</h4>
+                                <ul id="reportTodoList" class="space-y-2 text-sm text-orange-900"></ul>
+                            </div>
+                        </div>
+
+                        <!-- アクションプラン入力 -->
+                        <div>
+                            <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-arrow-trend-up text-primary"></i> 次回へのアクションプラン・振り返り</h4>
+                            <div id="actionPlanInputs" class="space-y-4">
+                                <!-- タスクごとの入力欄をJSで生成 -->
+                            </div>
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t border-gray-100 flex justify-end">
+                            <button onclick="app.saveReport()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform hover:-translate-y-1">
+                                レポートを保存する
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. メンバー管理 -->
+            <div id="view-members" class="hidden flex-1 overflow-y-auto p-6 bg-slate-50 transition-opacity duration-300">
+                <div class="max-w-3xl mx-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">メンバー管理</h2>
+                            <p class="text-slate-500 text-sm">タスクボードに表示するメンバーを追加・編集します。</p>
+                        </div>
+                        <button onclick="app.openMemberModal()" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm">
+                            <i class="fa-solid fa-user-plus"></i> メンバー追加
+                        </button>
+                    </div>
+
+                    <div id="membersList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- JSで生成 -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FAB: AIタスク登録 -->
+    <button onclick="app.openVoiceModal()" class="fixed bottom-8 right-8 z-40 w-14 h-14 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 group">
+        <i class="fa-solid fa-wand-magic-sparkles text-xl group-hover:animate-pulse"></i>
+        <span class="absolute right-full mr-3 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">AIタスク登録</span>
+    </button>
+
+    <!-- モーダル: タスク編集 -->
+    <div id="taskModal" class="fixed inset-0 bg-gray-900/50 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden transform transition-all scale-100">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-slate-800">タスク編集</h3>
+                <button onclick="app.closeModal('taskModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <input type="hidden" id="taskIdInput">
+                <div id="aiSuggestionBadge" class="hidden bg-purple-50 border border-purple-100 p-3 rounded-lg text-xs">
+                    <strong class="text-purple-700"><i class="fa-solid fa-wand-magic-sparkles"></i> AI解析:</strong> <span id="aiSourceText" class="text-purple-600"></span>
+                </div>
+                <!-- 日時スマート入力 -->
+                <div class="bg-blue-50 border border-blue-100 p-3 rounded-lg">
+                    <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">日時を自由に入力 (例: 明日 10時)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="taskModalSmartInput" 
+                            placeholder="例: 2/1 15:30" 
+                            class="flex-1 text-sm border-blue-200 rounded-md px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20"
+                            onkeydown="if(event.key==='Enter') { event.preventDefault(); app.applySmartInputToModal(this.value); }">
+                        <button onclick="app.applySmartInputToModal(document.getElementById('taskModalSmartInput').value)" class="bg-blue-500 text-white px-3 py-1.5 rounded-md text-xs font-bold">適用</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">タイトル</label>
+                    <input type="text" id="taskTitleInput" class="w-full border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">日付</label>
+                        <input type="date" id="taskDateInput" class="w-full border-gray-300 rounded-lg px-3 py-2 outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">優先度</label>
+                        <select id="taskPriorityInput" class="w-full border-gray-300 rounded-lg px-3 py-2 outline-none bg-white">
+                            <option value="緊急">緊急</option>
+                            <option value="高">高</option>
+                            <option value="中">中</option>
+                            <option value="低">低</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">開始時間</label>
+                        <input type="time" id="taskStartTimeInput" class="w-full border-gray-300 rounded-lg px-3 py-2 outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">終了時間</label>
+                        <input type="time" id="taskEndTimeInput" class="w-full border-gray-300 rounded-lg px-3 py-2 outline-none bg-white">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">担当者</label>
+                    <select id="taskAssigneeInput" class="w-full border-gray-300 rounded-lg px-3 py-2 outline-none bg-white"></select>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-500">詳細</label>
+                        <button onclick="app.polishDescription()" class="text-xs text-purple-600 hover:bg-purple-50 px-2 py-1 rounded transition-colors"><i class="fa-solid fa-sparkles"></i> AI推敲</button>
+                    </div>
+                    <textarea id="taskDescInput" class="w-full border-gray-300 rounded-lg px-3 py-2 outline-none resize-none h-24 focus:ring-2 focus:ring-primary/50"></textarea>
+                </div>
+                <!-- サブタスク -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs font-bold text-slate-500">サブタスク</label>
+                        <button onclick="app.generateSubtasks()" class="text-xs text-purple-600 hover:bg-purple-50 px-2 py-1 rounded transition-colors"><i class="fa-solid fa-list-check"></i> AI分解</button>
+                    </div>
+                    <div id="subtaskList" class="space-y-2"></div>
+                    <button onclick="app.addSubtaskItem('')" class="text-xs text-slate-400 hover:text-primary mt-2 flex items-center gap-1"><i class="fa-solid fa-plus"></i> 手動追加</button>
+                </div>
+                <div class="pt-4 border-t border-gray-100 flex gap-3">
+                    <button onclick="app.saveTask()" class="flex-1 bg-primary hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg shadow-sm transition-colors">保存</button>
+                    <button onclick="app.deleteTask()" id="deleteTaskBtn" class="hidden text-red-500 hover:bg-red-50 px-4 rounded-lg font-bold transition-colors">削除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: メンバー編集 -->
+    <div id="memberModal" class="fixed inset-0 bg-gray-900/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50"><h3 class="font-bold text-slate-800">メンバー編集</h3></div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="memberIdInput">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">名前</label>
+                    <input type="text" id="memberNameInput" class="w-full border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">アイコン背景色</label>
+                    <div class="flex gap-2 flex-wrap" id="colorPicker">
+                        <!-- JSで生成 -->
+                    </div>
+                </div>
+                <div class="pt-2 flex gap-3">
+                    <button onclick="app.saveMember()" class="flex-1 bg-primary text-white font-bold py-2 rounded-lg">保存</button>
+                    <button onclick="app.deleteMember()" id="deleteMemberBtn" class="text-red-500 px-4">削除</button>
+                    <button onclick="app.closeModal('memberModal')" class="text-slate-400 px-2">キャンセル</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: AI音声入力 -->
+    <div id="voiceModal" class="fixed inset-0 bg-gray-900/50 z-[60] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-8 text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500"></div>
+            <button onclick="app.closeModal('voiceModal')" class="absolute top-4 right-4 text-slate-300 hover:text-slate-500"><i class="fa-solid fa-xmark text-lg"></i></button>
+            
+            <div id="aiInputStep1">
+                <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <h3 class="font-bold text-lg mb-2">AIタスク登録</h3>
+                <p class="text-xs text-slate-500 mb-4">タスクの内容を入力してください。<br>担当者や優先度を自動解析します。</p>
+                <textarea id="aiPromptInput" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm mb-4 h-24 resize-none focus:ring-2 focus:ring-purple-500 outline-none" placeholder="例: 明日の15時までに田中さんにプレゼン資料の作成を頼む。"></textarea>
+                <button onclick="app.processAIInput()" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-lg">解析して作成</button>
+            </div>
+            <div id="aiInputStep2" class="hidden py-8">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-purple-600 mb-4"></i>
+                <p class="font-bold text-slate-700">Geminiが思考中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: API設定 -->
+    <div id="apiSettingModal" class="fixed inset-0 bg-gray-900/50 z-[70] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <h3 class="font-bold text-lg mb-4">Gemini API設定</h3>
+            <p class="text-xs text-slate-500 mb-4">AI機能を使用するにはAPIキーが必要です。</p>
+            <input type="password" id="apiKeyInput" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 outline-none" placeholder="API Key">
+            
+            <!-- 通知設定 -->
+            <div class="border-t border-gray-100 pt-4 mb-4">
+                <h4 class="text-xs font-bold text-slate-500 mb-2">通知設定</h4>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="browserNotifyCheck" class="w-4 h-4 rounded text-primary border-gray-300" checked>
+                        <span class="text-sm text-slate-700">ブラウザ通知を有効にする</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="soundNotifyCheck" class="w-4 h-4 rounded text-primary border-gray-300" checked>
+                        <span class="text-sm text-slate-700">通知音を鳴らす</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- バックアップ設定 -->
+            <div class="border-t border-gray-100 pt-4 mb-4">
+                <h4 class="text-xs font-bold text-slate-500 mb-2">バックアップ</h4>
+                <div class="flex gap-2">
+                    <button onclick="app.exportData()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-slate-700 py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download text-xs"></i> エクスポート
+                    </button>
+                    <button onclick="document.getElementById('importFile').click()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-slate-700 py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-upload text-xs"></i> インポート
+                    </button>
+                    <input type="file" id="importFile" class="hidden" accept=".json" onchange="app.importData(event)">
+                </div>
+            </div>
+
+            <!-- カテゴリ管理 -->
+            <div class="border-t border-gray-100 pt-4 mb-4">
+                <h4 class="text-xs font-bold text-slate-500 mb-2">プライベートカテゴリ設定</h4>
+                <div id="categoryManageList" class="flex flex-wrap gap-2 mb-3">
+                    <!-- JSで生成 -->
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="newCategoryInput" placeholder="新カテゴリ名..." class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary">
+                    <button onclick="app.addCategory()" class="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-sm transition-colors">追加</button>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button onclick="document.getElementById('apiSettingModal').classList.add('hidden')" class="text-slate-500 px-4 py-2">閉じる</button>
+                <button onclick="app.saveApiKey()" class="bg-primary text-white font-bold px-4 py-2 rounded-lg">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        // --- アプリケーションのロジック ---
+        class TodoApp {
+            constructor() {
+                this.state = {
+                    currentDate: new Date(),
+                    calendarViewDate: new Date(), // ミニカレンダー用
+                    view: 'team', // team, private, report, members
+                    members: [],
+                    tasks: [],
+                    privateTodos: [],
+                    privateNotes: [],
+                    categories: ['事務', '開発', '連絡', 'アイデア'],
+                    reports: {}, // date string key
+                    apiKey: '',
+                    settings: {
+                        browserNotification: true,
+                        soundNotification: true
+                    }
+                };
+                this.colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#64748B'];
+                
+                this.init();
+            }
+
+            init() {
+                this.loadData();
+                this.render(); // Render first to ensure initial state UI
+                this.setupEventListeners();
+                this.updateDateDisplay();
+            }
+
+            setupEventListeners() {
+                // New Note Shortcut (Shift + Enter)
+                const noteInput = document.getElementById('newNoteInput');
+                if (noteInput) {
+                    noteInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && e.shiftKey) {
+                            e.preventDefault();
+                            this.addPrivateNote();
+                        }
+                    });
+                }
+            }
+
+            // --- Data Persistence (LocalStorage) ---
+            saveData() {
+                localStorage.setItem('teamsync_data', JSON.stringify({
+                    members: this.state.members,
+                    tasks: this.state.tasks,
+                    privateTodos: this.state.privateTodos,
+                    privateNotes: this.state.privateNotes,
+                    categories: this.state.categories,
+                    reports: this.state.reports,
+                    apiKey: this.state.apiKey
+                }));
+            }
+
+            loadData() {
+                const saved = localStorage.getItem('teamsync_data');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    this.state = { ...this.state, ...parsed };
+                    
+                    // 「やるべきこと」系を削除し、指定のカテゴリのみに整理
+                    const targetCats = ['事務', '開発', '連絡', 'アイデア'];
+                    this.state.categories = targetCats;
+                    
+                    // 削除されたカテゴリに属していたタスクを「事務」に移行
+                    this.state.privateTodos.forEach(t => {
+                        if (!targetCats.includes(t.category)) t.category = '事務';
+                    });
+                } else {
+                    // Initial Dummy Data
+                    this.state.members = [
+                        { id: 'm1', name: '川添皓哉', color: '#3B82F6' },
+                      
+                    ];
+                    this.state.tasks = [
+                        { id: 't1', title: 'API仕様書修正', desc: 'Swaggerの更新', assigneeId: 'm1', status: 'todo', priority: '緊急', date: this.formatDateKey(new Date()), subtasks: [] },
+                        { id: 't2', title: 'LPデザイン', desc: 'Figma作成', assigneeId: 'm2', status: 'done', priority: '中', date: this.formatDateKey(new Date()), subtasks: [] }
+                    ];
+                    this.state.privateTodos = [
+                        { id: 'p1', text: '事務作業の例', category: '事務', done: false }
+                    ];
+                }
+            }
+
+            // --- Render Logic ---
+            render() {
+                this.renderTeamBoard();
+                this.renderPrivateView();
+                this.renderReportView();
+                this.renderMembersView();
+                this.renderNav();
+                this.renderSettings();
+                this.renderMiniCalendar();
+                
+                // Set Header Title
+                const titles = { team: 'タスクボード', private: 'マイタスク', report: '日報・レポート', members: 'メンバー管理' };
+                document.getElementById('viewTitle').textContent = titles[this.state.view];
+            }
+
+            toggleSidebar() {
+                document.getElementById('sidebar').classList.toggle('sidebar-open');
+                document.getElementById('mobileOverlay').classList.toggle('active');
+            }
+
+            renderMiniCalendar() {
+                const sidebar = document.getElementById('sidebar');
+                if (!sidebar) return; // サイドバーがない場合は実行しない
+
+                const container = document.getElementById('miniCalendarBody');
+                const monthDisplay = document.getElementById('calendarMonthDisplay');
+                if (!container || !monthDisplay) return;
+
+                const viewDate = this.state.calendarViewDate;
+                
+                // 表示月
+                monthDisplay.textContent = `${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月`;
+                
+                // 今日の日付を表示
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+                let todayBanner = document.getElementById('todayBanner');
+                if (!todayBanner) {
+                    monthDisplay.parentElement.insertAdjacentHTML('afterend', '<div id="todayBanner"></div>');
+                    todayBanner = document.getElementById('todayBanner');
+                }
+                if (todayBanner) {
+                    todayBanner.className = "text-[10px] px-2 py-1 mb-2 bg-blue-50 text-blue-600 rounded flex items-center gap-1 font-bold cursor-pointer hover:bg-blue-100 transition-colors";
+                    todayBanner.onclick = () => this.resetDate();
+                    todayBanner.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> 今日: ${todayStr}`;
+                }
+
+                const firstDay = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+                const lastDay = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+                
+                // 開始曜日（0:日, 6:土）
+                const startDayOfWeek = firstDay.getDay();
+                
+                let html = '';
+                
+                // 前月の余白
+                const prevMonthLastDay = new Date(viewDate.getFullYear(), viewDate.getMonth(), 0).getDate();
+                for (let i = startDayOfWeek - 1; i >= 0; i--) {
+                    html += `<div class="calendar-day other-month">${prevMonthLastDay - i}</div>`;
+                }
+                
+                // 当月の日付
+                for (let d = 1; d <= lastDay.getDate(); d++) {
+                    const currentLoopDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), d);
+                    const dateKey = this.formatDateKey(currentLoopDate);
+                    const isActive = dateKey === this.formatDateKey(this.state.currentDate);
+                    const isToday = dateKey === this.formatDateKey(today);
+                    const isHoliday = this.isJapaneseHoliday(currentLoopDate);
+                    
+                    html += `
+                        <div onclick="app.setDate('${dateKey}')" 
+                            class="calendar-day ${isActive ? 'active' : ''} ${isToday ? 'today' : ''} ${isHoliday ? 'holiday' : ''}"
+                            title="${isToday ? '今日' : ''}${isHoliday ? ' 祝日' : ''}">
+                            ${d}
+                        </div>
+                    `;
+                }
+                
+                // 翌月の余白（6行分埋める）
+                const totalCells = (html.match(/<div/g) || []).length;
+                for (let i = 1; i <= (42 - totalCells); i++) {
+                    html += `<div class="calendar-day other-month">${i}</div>`;
+                }
+                
+                container.innerHTML = html;
+            }
+
+            isJapaneseHoliday(date) {
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                const year = date.getFullYear();
+                
+                // 2026年の主要な祝日 (簡易判定)
+                const holidays = {
+                    1: [1, 12], // 元日, 成人の日
+                    2: [11, 23], // 建国記念の日, 天皇誕生日
+                    3: [20], // 春分の日
+                    4: [29], // 昭和の日
+                    5: [3, 4, 5, 6], // 憲法記念日, みどりの日, こどもの日, 振替休日
+                    7: [20], // 海の日
+                    8: [11], // 山の日
+                    9: [21, 22, 23], // 敬老の日, 秋分の日, 振替休日
+                    10: [12], // スポーツの日
+                    11: [3, 23], // 文化の日, 勤労感謝の日
+                };
+                
+                return holidays[month]?.includes(day) || date.getDay() === 0; // 日曜日も祝日扱い（薄く赤くする対象）
+            }
+
+            changeCalendarMonth(offset) {
+                const newDate = new Date(this.state.calendarViewDate);
+                newDate.setMonth(newDate.getMonth() + offset);
+                this.state.calendarViewDate = newDate;
+                this.renderMiniCalendar();
+            }
+
+            renderSettings() {
+                document.getElementById('apiKeyInput').value = this.state.apiKey || '';
+                document.getElementById('browserNotifyCheck').checked = this.state.settings?.browserNotification ?? true;
+                document.getElementById('soundNotifyCheck').checked = this.state.settings?.soundNotification ?? true;
+
+                const container = document.getElementById('categoryManageList');
+                if (container) {
+                    container.innerHTML = this.state.categories.map(cat => `
+                        <div class="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-2 text-sm">
+                            <span>${cat}</span>
+                            <button onclick="app.deleteCategory('${cat}')" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            // Settings Actions
+            addCategory() {
+                const input = document.getElementById('newCategoryInput');
+                const val = input.value.trim();
+                if (!val) return;
+                if (this.state.categories.includes(val)) return alert('既にあるカテゴリです');
+                this.state.categories.push(val);
+                input.value = '';
+                this.saveData();
+                this.render();
+            }
+
+            deleteCategory(cat) {
+                if (this.state.privateTodos.some(t => t.category === cat)) {
+                    return alert('このカテゴリを使用しているタスクがあります');
+                }
+                this.state.categories = this.state.categories.filter(c => c !== cat);
+                this.saveData();
+                this.render();
+            }
+
+            exportData() {
+                const data = JSON.stringify(this.state, null, 2);
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const dateStr = this.formatDateKey(new Date());
+                a.href = url;
+                a.download = `teamsync_backup_${dateStr}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                this.showToast('データをエクスポートしました');
+            }
+
+            importData(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (confirm('現在のデータが上書きされます。よろしいですか？')) {
+                            this.state = { ...this.state, ...data };
+                            this.saveData();
+                            this.render();
+                            this.showToast('データをインポートしました');
+                        }
+                    } catch (err) {
+                        alert('ファイルの読み込みに失敗しました');
+                    }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            }
+
+            renderNav() {
+                document.querySelectorAll('.nav-item').forEach(el => {
+                    el.classList.remove('active', 'active-private', 'text-slate-900', 'font-bold');
+                    el.classList.add('text-slate-600');
+                });
+                
+                const activeId = `nav-${this.state.view}`;
+                const el = document.getElementById(activeId);
+                if (el) {
+                    el.classList.remove('text-slate-600');
+                    if (this.state.view === 'private') {
+                        el.classList.add('active-private');
+                    } else {
+                        el.classList.add('active');
+                    }
+                }
+            }
+
+            renderTeamBoard() {
+                const container = document.getElementById('teamBoardContainer');
+                container.innerHTML = '';
+                const dateKey = this.formatDateKey(this.state.currentDate);
+
+                this.state.members.forEach(member => {
+                    const memberTasks = this.state.tasks.filter(t => t.assigneeId === member.id && t.date === dateKey);
+                    const doneCount = memberTasks.filter(t => t.status === 'done').length;
+                    
+                    const col = document.createElement('div');
+                    col.className = 'flex flex-col h-full w-[450px] bg-white rounded-xl border border-gray-200 shadow-sm flex-shrink-0';
+                    col.innerHTML = `
+                        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full text-white flex items-center justify-center font-bold shadow-sm" style="background-color: ${member.color}">
+                                    ${member.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-lg">${member.name}</h3>
+                                    <p class="text-xs text-slate-500">完了: ${doneCount} / 全体: ${memberTasks.length}</p>
+                                </div>
+                            </div>
+                            <button onclick="app.openTaskModal(null, '${member.id}')" class="text-slate-400 hover:text-primary p-2"><i class="fa-solid fa-plus text-xl"></i></button>
+                        </div>
+                        <div class="p-3 flex-1 overflow-y-auto space-y-3 bg-gray-50/30 task-list-area" data-member-id="${member.id}">
+                            ${memberTasks.map(task => this.createTaskCardHtml(task)).join('')}
+                            <button onclick="app.openTaskModal(null, '${member.id}')" class="w-full py-4 border-2 border-dashed border-gray-200 rounded-lg text-slate-400 text-sm hover:border-primary hover:text-primary hover:bg-blue-50 transition-colors">
+                                <i class="fa-solid fa-plus"></i> 新しいタスクを書き込む...
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(col);
+                });
+
+                // メンバー追加カード
+                const addCol = document.createElement('div');
+                addCol.className = 'flex flex-col h-full w-20 items-center justify-center rounded-xl border-2 border-dashed border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors flex-shrink-0';
+                addCol.onclick = () => this.switchView('members');
+                addCol.innerHTML = '<i class="fa-solid fa-user-plus text-2xl text-slate-300"></i>';
+                container.appendChild(addCol);
+            }
+
+            createTaskCardHtml(task) {
+                const isDone = task.status === 'done';
+                const priorityColors = { 
+                    '緊急': 'bg-red-100 text-red-700 border-red-500', 
+                    '高': 'bg-orange-100 text-orange-700 border-orange-400', 
+                    '中': 'bg-blue-100 text-blue-700 border-blue-400', 
+                    '低': 'bg-gray-100 text-gray-700 border-gray-300' 
+                };
+                
+                // 優先度に応じた枠線の太さ
+                const borderWeight = {
+                    '緊急': 'border-4',
+                    '高': 'border-2',
+                    '中': 'border',
+                    '低': 'border'
+                };
+
+                const borderColor = {
+                    '緊急': 'border-red-500',
+                    '高': 'border-orange-400',
+                    '中': 'border-blue-400',
+                    '低': 'border-gray-300'
+                };
+                
+                return `
+                <div class="task-card bg-white p-4 rounded-lg ${borderWeight[task.priority]} ${borderColor[task.priority]} ${isDone ? 'opacity-60 grayscale' : 'shadow-md'} cursor-pointer relative group" onclick="app.openTaskModal('${task.id}')">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] px-2 py-0.5 rounded font-bold ${priorityColors[task.priority]}">${task.priority}</span>
+                            ${task.startTime ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold"><i class="fa-regular fa-clock"></i> ${task.startTime}${task.endTime ? ' - ' + task.endTime : ''}</span>` : ''}
+                        </div>
+                        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="event.stopPropagation(); app.moveTaskToNextDay('${task.id}')" class="p-1 text-slate-400 hover:text-primary" title="翌日に持ち越し">
+                                <i class="fa-solid fa-calendar-plus"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); app.toggleTaskStatus('${task.id}')" class="p-1 text-slate-400 hover:text-green-500" title="完了/未完了">
+                                <i class="fa-regular ${isDone ? 'fa-circle-check text-green-500' : 'fa-circle'}"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <input type="text" 
+                            value="${task.title}" 
+                            onblur="app.updateTaskTitle('${task.id}', this.value)"
+                            onclick="event.stopPropagation()"
+                            class="w-full font-bold text-slate-800 text-base bg-transparent border-none focus:ring-1 focus:ring-primary rounded p-1 ${isDone ? 'line-through text-slate-500' : ''}"
+                        >
+                        <div class="expanded-content border-t border-slate-100 pt-3">
+                            <div class="mb-3">
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">詳細メモ</label>
+                                <textarea 
+                                    onblur="app.updateTaskDesc('${task.id}', this.value)"
+                                    onclick="event.stopPropagation()"
+                                    class="w-full text-sm text-slate-600 bg-slate-50 border-none focus:ring-1 focus:ring-primary rounded p-2 resize-none overflow-hidden h-auto min-h-[60px]"
+                                    oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                    placeholder="詳細を書き込む..."
+                                >${task.desc || ''}</textarea>
+                            </div>
+                            
+                            ${task.subtasks && task.subtasks.length > 0 ? `
+                                <div class="space-y-1.5">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">サブタスク (${task.subtasks.filter(s => s.done).length}/${task.subtasks.length})</label>
+                                    ${task.subtasks.map((s, idx) => `
+                                        <div class="flex items-center gap-2 group/sub">
+                                            <input type="checkbox" ${s.done ? 'checked' : ''} 
+                                                onclick="event.stopPropagation(); app.toggleSubtask('${task.id}', ${idx})"
+                                                class="w-3.5 h-3.5 rounded border-gray-300 text-primary">
+                                            <span class="text-xs ${s.done ? 'line-through text-slate-400' : 'text-slate-600'}">${s.title}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : `
+                                <button onclick="event.stopPropagation(); app.generateSubtasksForId('${task.id}')" class="text-[10px] text-purple-600 hover:bg-purple-50 px-2 py-1 rounded border border-purple-100 transition-colors">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> AIでサブタスクを生成
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            moveTaskToNextDay(taskId) {
+                const task = this.state.tasks.find(t => t.id === taskId);
+                if (!task) return;
+                
+                const currentDate = new Date(task.date);
+                currentDate.setDate(currentDate.getDate() + 1);
+                task.date = this.formatDateKey(currentDate);
+                
+                this.saveData();
+                this.render();
+                this.showToast('タスクを翌日に持ち越しました');
+            }
+
+            toggleSubtask(taskId, subIdx) {
+                const task = this.state.tasks.find(t => t.id === taskId);
+                if (task && task.subtasks[subIdx]) {
+                    task.subtasks[subIdx].done = !task.subtasks[subIdx].done;
+                    this.saveData();
+                    this.render();
+                }
+            }
+
+            async generateSubtasksForId(taskId) {
+                const task = this.state.tasks.find(t => t.id === taskId);
+                if (!task) return;
+                
+                this.showToast('AIがサブタスクを生成中...');
+                const prompt = `タスク「${task.title}」を達成するためのサブタスクを3〜5個、JSON配列 ["手順1", "手順2"] で返して`;
+                const res = await this.callGemini(prompt);
+                if (res) {
+                    try {
+                        const arr = JSON.parse(res.replace(/```json|```/g, '').trim());
+                        task.subtasks = arr.map(t => ({ title: t, done: false }));
+                        this.saveData();
+                        this.render();
+                        this.showToast('サブタスクを生成しました');
+                    } catch(e){
+                        this.showToast('生成に失敗しました', 'danger');
+                    }
+                }
+            }
+
+            updateTaskTitle(id, newTitle) {
+                const task = this.state.tasks.find(t => t.id === id);
+                if (task && task.title !== newTitle) {
+                    task.title = newTitle;
+                    this.saveData();
+                    this.showToast('タスクを更新しました');
+                    this.render();
+                }
+            }
+
+            updateTaskDesc(id, newDesc) {
+                const task = this.state.tasks.find(t => t.id === id);
+                if (task && task.desc !== newDesc) {
+                    task.desc = newDesc;
+                    this.saveData();
+                    this.showToast('タスク詳細を更新しました');
+                    this.render();
+                }
+            }
+
+            renderPrivateView() {
+                // Render Categories
+                const catSelector = document.getElementById('newPrivateTodoCategory');
+                if (catSelector) {
+                    catSelector.innerHTML = this.state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+                }
+
+                const catTabs = document.getElementById('privateCategoryTabs');
+                if (catTabs) {
+                    const currentFilter = this.state.privateFilter || 'すべて';
+                    let tabsHtml = `<button onclick="app.setPrivateFilter('すべて')" class="text-xs ${currentFilter === 'すべて' ? 'font-bold bg-purple-100 text-purple-700' : 'font-medium text-slate-500 hover:bg-gray-100'} px-3 py-1 rounded-full whitespace-nowrap">すべて</button>`;
+                    tabsHtml += this.state.categories.map(c => `
+                        <button onclick="app.setPrivateFilter('${c}')" class="text-xs ${currentFilter === c ? 'font-bold bg-purple-100 text-purple-700' : 'font-medium text-slate-500 hover:bg-gray-100'} px-3 py-1 rounded-full whitespace-nowrap">${c}</button>
+                    `).join('');
+                    catTabs.innerHTML = tabsHtml;
+                }
+
+                const todoList = document.getElementById('privateTodoList');
+                
+                // 「すべての項目でも見えるように」という要望に基づき、フィルタリングを緩和または廃止
+                // ここでは全タスクを表示し、選択中のカテゴリを強調する形式に変更
+                const filteredTodos = this.state.privateTodos; 
+
+                let todoHtml = filteredTodos.map(todo => {
+                    const isMatched = (this.state.privateFilter === 'すべて' || todo.category === this.state.privateFilter);
+                    return `
+                    <li class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded group ${isMatched ? '' : 'opacity-40'}">
+                        <input type="checkbox" onchange="app.togglePrivateTodo('${todo.id}')" ${todo.done ? 'checked' : ''} class="w-4 h-4 rounded border-gray-300 text-private focus:ring-private cursor-pointer">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <input type="text" 
+                                    value="${todo.text}" 
+                                    onblur="app.updatePrivateTodoText('${todo.id}', this.value)"
+                                    class="flex-1 bg-transparent border-none focus:ring-1 focus:ring-private rounded px-1 text-sm text-slate-700 ${todo.done ? 'line-through text-slate-400' : ''}"
+                                >
+                                <span class="text-[10px] ${todo.category === this.state.privateFilter ? 'bg-purple-600 text-white' : 'bg-gray-100 text-slate-500'} px-1.5 py-0.5 rounded transition-colors">${todo.category}</span>
+                            </div>
+                        </div>
+                        <button onclick="app.deletePrivateTodo('${todo.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-trash"></i></button>
+                    </li>
+                `;}).join('');
+
+                // 追記用空行
+                todoHtml += `
+                    <li class="flex items-center gap-3 p-2 group opacity-50 focus-within:opacity-100">
+                        <div class="w-4 h-4 border-2 border-dashed border-gray-300 rounded"></div>
+                        <div class="flex-1 min-w-0">
+                            <input type="text" 
+                                placeholder="新しいタスクをここに書き込む..." 
+                                onkeydown="if(event.key==='Enter') app.quickAddPrivateTodo(this)"
+                                class="flex-1 bg-transparent border-none focus:ring-0 rounded px-1 text-sm text-slate-700"
+                            >
+                        </div>
+                    </li>
+                `;
+                todoList.innerHTML = todoHtml;
+
+                const noteList = document.getElementById('privateNoteList');
+                noteList.innerHTML = this.state.privateNotes.map(note => `
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100 relative group">
+                        <textarea 
+                            onblur="app.updatePrivateNoteContent('${note.id}', this.value)"
+                            class="w-full bg-transparent border-none focus:ring-1 focus:ring-yellow-400 rounded p-1 text-sm text-slate-700 leading-relaxed resize-none overflow-hidden"
+                            oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                        >${note.content}</textarea>
+                        <span class="block text-right text-[10px] text-slate-400 mt-2">${new Date(note.date).toLocaleDateString()}</span>
+                        <button onclick="app.deletePrivateNote('${note.id}')" class="absolute top-2 right-2 text-yellow-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `).join('');
+                
+                // テキストエリアの高さを調整
+                setTimeout(() => {
+                    document.querySelectorAll('#privateNoteList textarea').forEach(el => {
+                        el.style.height = el.scrollHeight + 'px';
+                    });
+                }, 0);
+            }
+
+            updatePrivateTodoText(id, newText) {
+                const todo = this.state.privateTodos.find(t => t.id === id);
+                if (todo && todo.text !== newText) {
+                    todo.text = newText;
+                    this.saveData();
+                    this.showToast('TODOを更新しました');
+                }
+            }
+
+            updatePrivateNoteContent(id, newContent) {
+                const note = this.state.privateNotes.find(n => n.id === id);
+                if (note && note.content !== newContent) {
+                    note.content = newContent;
+                    this.saveData();
+                    this.showToast('メモを更新しました');
+                }
+            }
+
+            quickAddPrivateTodo(inputEl) {
+                const text = inputEl.value.trim();
+                if (!text) return;
+                const category = this.state.privateFilter && this.state.privateFilter !== 'すべて' ? this.state.privateFilter : this.state.categories[0];
+                
+                this.state.privateTodos.push({
+                    id: 'p' + Date.now(),
+                    text: text,
+                    category: category,
+                    done: false
+                });
+                this.saveData();
+                this.renderPrivateView();
+                // 連続入力のためにフォーカスを戻す (render後に要素が変わるので少し待つ)
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('#privateTodoList input[type="text"]');
+                    const lastInput = inputs[inputs.length - 1];
+                    if (lastInput) lastInput.focus();
+                }, 100);
+            }
+
+            renderReportView() {
+                const dateKey = this.formatDateKey(this.state.currentDate);
+                document.getElementById('reportDateTitle').textContent = `${this.state.currentDate.getMonth() + 1}月${this.state.currentDate.getDate()}日のレポート`;
+                
+                const dailyTasks = this.state.tasks.filter(t => t.date === dateKey);
+                const doneTasks = dailyTasks.filter(t => t.status === 'done');
+                const todoTasks = dailyTasks.filter(t => t.status !== 'done');
+                
+                const progress = dailyTasks.length > 0 ? Math.round((doneTasks.length / dailyTasks.length) * 100) : 0;
+                document.getElementById('reportProgress').textContent = `${progress}%`;
+
+                document.getElementById('reportDoneList').innerHTML = doneTasks.length ? doneTasks.map(t => `<li>・${t.title}</li>`).join('') : '<li class="text-slate-400">なし</li>';
+                document.getElementById('reportTodoList').innerHTML = todoTasks.length ? todoTasks.map(t => `<li>・${t.title}</li>`).join('') : '<li class="text-slate-400">なし</li>';
+
+                // Action Plans
+                const reportData = this.state.reports[dateKey] || { actions: {} };
+                const inputsContainer = document.getElementById('actionPlanInputs');
+                inputsContainer.innerHTML = dailyTasks.map(task => `
+                    <div class="bg-white border border-gray-200 rounded-lg p-3">
+                        <p class="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full ${task.status === 'done' ? 'bg-green-500' : 'bg-orange-500'}"></span>
+                            ${task.title}
+                        </p>
+                        <textarea id="action_${task.id}" class="w-full bg-gray-50 border border-gray-200 rounded p-2 text-xs resize-none h-16 outline-none focus:bg-white focus:ring-1 focus:ring-primary" placeholder="振り返りや次回のアクション...">${reportData.actions[task.id] || ''}</textarea>
+                    </div>
+                `).join('');
+                if (dailyTasks.length === 0) inputsContainer.innerHTML = '<p class="text-center text-slate-400 text-sm py-4">この日のタスクはありません。</p>';
+            }
+
+            renderMembersView() {
+                const container = document.getElementById('membersList');
+                container.innerHTML = this.state.members.map(m => `
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full text-white flex items-center justify-center font-bold" style="background-color: ${m.color}">${m.name.charAt(0)}</div>
+                            <span class="font-bold text-slate-700">${m.name}</span>
+                        </div>
+                        <button onclick="app.openMemberModal('${m.id}')" class="text-slate-400 hover:text-primary"><i class="fa-solid fa-pen"></i></button>
+                    </div>
+                `).join('');
+            }
+
+            // --- Actions ---
+            switchView(view) {
+                this.state.view = view;
+                ['team', 'private', 'report', 'members'].forEach(v => {
+                    const el = document.getElementById(`view-${v}`);
+                    if (el) el.classList.add('hidden');
+                });
+                
+                const activeEl = document.getElementById(`view-${view}`);
+                if (activeEl) activeEl.classList.remove('hidden');
+                this.render();
+            }
+
+            changeDate(offset) {
+                const d = new Date(this.state.currentDate);
+                d.setDate(d.getDate() + offset);
+                this.state.currentDate = d;
+                this.updateDateDisplay();
+                this.render();
+            }
+
+            resetDate() {
+                this.state.currentDate = new Date();
+                this.updateDateDisplay();
+                this.render();
+            }
+
+            setDate(dateStr) {
+                if (!dateStr) return;
+                this.state.currentDate = new Date(dateStr);
+                this.updateDateDisplay();
+                this.render();
+            }
+
+            updateDateDisplay() {
+                const options = { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' };
+                document.getElementById('currentDateDisplay').textContent = this.state.currentDate.toLocaleDateString('ja-JP', options);
+                document.getElementById('hiddenDatePicker').value = this.formatDateKey(this.state.currentDate);
+            }
+
+            applySmartInputToModal(text) {
+                if (!text.trim()) return;
+                const parsed = this.parseDateTime(text);
+                if (parsed.date) {
+                    document.getElementById('taskDateInput').value = this.formatDateKey(parsed.date);
+                }
+                if (parsed.startTime) {
+                    document.getElementById('taskStartTimeInput').value = parsed.startTime;
+                }
+                this.showToast('日時を適用しました');
+            }
+
+            parseDateTime(text) {
+                let targetDate = new Date(this.state.currentDate);
+                let startTime = "";
+                let title = text;
+
+                // 日付キーワード
+                if (title.includes("明日")) {
+                    targetDate.setDate(targetDate.getDate() + 1);
+                    title = title.replace("明日", "");
+                } else if (title.includes("明後日")) {
+                    targetDate.setDate(targetDate.getDate() + 2);
+                    title = title.replace("明後日", "");
+                } else if (title.match(/(\d{1,2})\/(\d{1,2})/)) {
+                    const match = title.match(/(\d{1,2})\/(\d{1,2})/);
+                    targetDate.setMonth(parseInt(match[1]) - 1);
+                    targetDate.setDate(parseInt(match[2]));
+                    title = title.replace(match[0], "");
+                }
+
+                // 時間キーワード
+                const timeMatch = title.match(/(\d{1,2})[:：](\d{2})/) || title.match(/(\d{1,2})時/);
+                if (timeMatch) {
+                    if (timeMatch[2]) {
+                        startTime = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
+                    } else {
+                        startTime = `${timeMatch[1].padStart(2, '0')}:00`;
+                    }
+                }
+
+                return { date: targetDate, startTime: startTime };
+            }
+
+            processMagicCommand(text) {
+                if (!text.trim()) return;
+                
+                const parsed = this.parseDateTime(text);
+                let title = text;
+                
+                // タイトルからパース済みのキーワードを除去（簡易的）
+                title = title.replace(/明日|明後日|\d{1,2}\/\d{1,2}|\d{1,2}[:：]\d{2}|\d{1,2}時/g, "").trim();
+
+                if (!title) return this.showToast('タイトルを入力してください', 'warning');
+
+                // タスクの作成
+                const newTask = {
+                    id: 't' + Date.now(),
+                    title: title,
+                    desc: "コマンド入力より作成",
+                    assigneeId: this.state.members[0]?.id || 'm1',
+                    status: 'todo',
+                    priority: '中',
+                    date: this.formatDateKey(parsed.date),
+                    startTime: parsed.startTime,
+                    subtasks: []
+                };
+
+                this.state.tasks.push(newTask);
+                this.saveData();
+                this.render();
+                document.getElementById('magicCommandInput').value = '';
+                this.showToast(`${this.formatDateKey(parsed.date)} にタスクを追加しました`);
+            }
+
+            formatDateKey(date) {
+                return date.toISOString().split('T')[0];
+            }
+
+            // Task Actions
+            openTaskModal(taskId = null, assigneeId = null) {
+                document.getElementById('taskModal').classList.remove('hidden');
+                document.getElementById('aiSuggestionBadge').classList.add('hidden');
+                document.getElementById('taskModalSmartInput').value = '';
+                document.getElementById('subtaskList').innerHTML = '';
+                
+                // Populate Assignee Select
+                const select = document.getElementById('taskAssigneeInput');
+                select.innerHTML = this.state.members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+
+                if (taskId) {
+                    const task = this.state.tasks.find(t => t.id === taskId);
+                    document.getElementById('taskIdInput').value = task.id;
+                    document.getElementById('taskTitleInput').value = task.title;
+                    document.getElementById('taskDescInput').value = task.desc || '';
+                    document.getElementById('taskAssigneeInput').value = task.assigneeId;
+                    document.getElementById('taskPriorityInput').value = task.priority;
+                    document.getElementById('taskDateInput').value = task.date;
+                    document.getElementById('taskStartTimeInput').value = task.startTime || '';
+                    document.getElementById('taskEndTimeInput').value = task.endTime || '';
+                    document.getElementById('deleteTaskBtn').classList.remove('hidden');
+                    
+                    if(task.subtasks) {
+                        task.subtasks.forEach(s => this.addSubtaskItem(s.title, s.done));
+                    }
+                } else {
+                    document.getElementById('taskIdInput').value = '';
+                    document.getElementById('taskTitleInput').value = '';
+                    document.getElementById('taskDescInput').value = '';
+                    if (assigneeId) document.getElementById('taskAssigneeInput').value = assigneeId;
+                    document.getElementById('taskPriorityInput').value = '中';
+                    document.getElementById('taskDateInput').value = this.formatDateKey(this.state.currentDate);
+                    document.getElementById('taskStartTimeInput').value = '';
+                    document.getElementById('taskEndTimeInput').value = '';
+                    document.getElementById('deleteTaskBtn').classList.add('hidden');
+                }
+            }
+
+            addSubtaskItem(text, done = false) {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2';
+                div.innerHTML = `
+                    <input type="checkbox" class="subtask-check w-4 h-4 rounded text-primary" ${done ? 'checked' : ''}>
+                    <input type="text" class="subtask-text flex-1 border border-gray-200 rounded px-2 py-1 text-sm" value="${text}" placeholder="サブタスク">
+                    <button onclick="this.parentElement.remove()" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                `;
+                document.getElementById('subtaskList').appendChild(div);
+            }
+
+            saveTask() {
+                const id = document.getElementById('taskIdInput').value;
+                const title = document.getElementById('taskTitleInput').value;
+                if (!title) return alert('タイトルは必須です');
+
+                const subtasks = Array.from(document.querySelectorAll('#subtaskList > div')).map(el => ({
+                    title: el.querySelector('.subtask-text').value,
+                    done: el.querySelector('.subtask-check').checked
+                })).filter(s => s.title);
+
+                const taskData = {
+                    title,
+                    desc: document.getElementById('taskDescInput').value,
+                    assigneeId: document.getElementById('taskAssigneeInput').value,
+                    priority: document.getElementById('taskPriorityInput').value,
+                    date: document.getElementById('taskDateInput').value,
+                    startTime: document.getElementById('taskStartTimeInput').value,
+                    endTime: document.getElementById('taskEndTimeInput').value,
+                    subtasks
+                };
+
+                if (id) {
+                    const idx = this.state.tasks.findIndex(t => t.id === id);
+                    this.state.tasks[idx] = { ...this.state.tasks[idx], ...taskData };
+                } else {
+                    this.state.tasks.push({
+                        id: 't' + Date.now(),
+                        status: 'todo',
+                        date: this.formatDateKey(this.state.currentDate),
+                        ...taskData
+                    });
+                }
+                this.saveData();
+                this.closeModal('taskModal');
+                this.render();
+                this.showToast('タスクを保存しました');
+            }
+
+            deleteTask() {
+                const id = document.getElementById('taskIdInput').value;
+                if (!confirm('削除しますか？')) return;
+                this.state.tasks = this.state.tasks.filter(t => t.id !== id);
+                this.saveData();
+                this.closeModal('taskModal');
+                this.render();
+                this.showToast('タスクを削除しました');
+            }
+
+            toggleTaskStatus(taskId) {
+                const task = this.state.tasks.find(t => t.id === taskId);
+                task.status = task.status === 'done' ? 'todo' : 'done';
+                
+                if (task.status === 'done') {
+                    this.showNotification(`タスク完了: ${task.title}`, 'success');
+                } else if (task.priority === '緊急') {
+                    this.showNotification(`緊急タスクが未完了に戻されました: ${task.title}`, 'warning');
+                }
+
+                this.saveData();
+                this.render();
+            }
+
+            showNotification(message, type = 'info') {
+                const colors = {
+                    success: 'bg-green-500',
+                    warning: 'bg-orange-500',
+                    danger: 'bg-red-500',
+                    info: 'bg-blue-500'
+                };
+                
+                const toast = document.createElement('div');
+                toast.className = `toast-enter ${colors[type]} text-white px-6 py-3 rounded-xl shadow-2xl text-sm font-bold flex items-center gap-3 mb-2`;
+                toast.innerHTML = `
+                    <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i>
+                    <span>${message}</span>
+                `;
+                document.getElementById('toastContainer').appendChild(toast);
+                
+                // 通知音
+                if (this.state.settings?.soundNotification) {
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    oscillator.start();
+                    oscillator.stop(audioCtx.currentTime + 0.1);
+                }
+
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-x-full');
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+
+                // ブラウザ通知 (許可されている場合 & 設定が有効な場合)
+                if (this.state.settings?.browserNotification) {
+                    if (Notification.permission === "granted") {
+                        new Notification("TeamSync Pro", { body: message });
+                    } else if (Notification.permission !== "denied") {
+                        Notification.requestPermission();
+                    }
+                }
+            }
+
+            setPrivateFilter(filter) {
+                this.state.privateFilter = filter;
+                this.renderPrivateView();
+            }
+
+            // Private Todo Actions
+            addPrivateTodo() {
+                const input = document.getElementById('newPrivateTodoInput');
+                const catSelect = document.getElementById('newPrivateTodoCategory');
+                if (!input.value.trim()) return;
+                
+                this.state.privateTodos.push({
+                    id: 'p' + Date.now(),
+                    text: input.value,
+                    category: catSelect.value,
+                    done: false
+                });
+                input.value = '';
+                this.saveData();
+                this.renderPrivateView();
+            }
+
+            togglePrivateTodo(id) {
+                const todo = this.state.privateTodos.find(t => t.id === id);
+                todo.done = !todo.done;
+                this.saveData();
+                this.renderPrivateView();
+            }
+
+            deletePrivateTodo(id) {
+                this.state.privateTodos = this.state.privateTodos.filter(t => t.id !== id);
+                this.saveData();
+                this.renderPrivateView();
+            }
+
+            // Note Actions
+            addPrivateNote() {
+                const input = document.getElementById('newNoteInput');
+                if (!input.value.trim()) return;
+                this.state.privateNotes.unshift({
+                    id: 'n' + Date.now(),
+                    content: input.value,
+                    date: new Date().toISOString()
+                });
+                input.value = '';
+                this.saveData();
+                this.renderPrivateView();
+            }
+            
+            deletePrivateNote(id) {
+                if(!confirm('メモを削除しますか？')) return;
+                this.state.privateNotes = this.state.privateNotes.filter(n => n.id !== id);
+                this.saveData();
+                this.renderPrivateView();
+            }
+
+            // Report Actions
+            saveReport() {
+                const dateKey = this.formatDateKey(this.state.currentDate);
+                const dailyTasks = this.state.tasks.filter(t => t.date === dateKey);
+                
+                if (!this.state.reports[dateKey]) this.state.reports[dateKey] = { actions: {} };
+                
+                dailyTasks.forEach(task => {
+                    const val = document.getElementById(`action_${task.id}`).value;
+                    this.state.reports[dateKey].actions[task.id] = val;
+                });
+                
+                this.saveData();
+                this.showToast('日報を保存しました');
+            }
+
+            // Member Actions
+            openMemberModal(id = null) {
+                document.getElementById('memberModal').classList.remove('hidden');
+                const picker = document.getElementById('colorPicker');
+                picker.innerHTML = this.colors.map(c => 
+                    `<div onclick="app.selectColor('${c}')" class="w-8 h-8 rounded-full cursor-pointer border-2 border-transparent hover:scale-110 transition-transform color-option" style="background-color: ${c}" data-color="${c}"></div>`
+                ).join('');
+
+                if (id) {
+                    const m = this.state.members.find(m => m.id === id);
+                    document.getElementById('memberIdInput').value = m.id;
+                    document.getElementById('memberNameInput').value = m.name;
+                    this.selectColor(m.color);
+                    document.getElementById('deleteMemberBtn').classList.remove('hidden');
+                } else {
+                    document.getElementById('memberIdInput').value = '';
+                    document.getElementById('memberNameInput').value = '';
+                    this.selectColor(this.colors[0]);
+                    document.getElementById('deleteMemberBtn').classList.add('hidden');
+                }
+            }
+
+            selectColor(color) {
+                this.selectedColor = color;
+                document.querySelectorAll('.color-option').forEach(el => {
+                    el.style.borderColor = el.dataset.color === color ? '#333' : 'transparent';
+                });
+            }
+
+            saveMember() {
+                const id = document.getElementById('memberIdInput').value;
+                const name = document.getElementById('memberNameInput').value;
+                if (!name) return alert('名前は必須です');
+
+                const memberData = { name, color: this.selectedColor || this.colors[0] };
+
+                if (id) {
+                    const idx = this.state.members.findIndex(m => m.id === id);
+                    this.state.members[idx] = { ...this.state.members[idx], ...memberData };
+                } else {
+                    this.state.members.push({ id: 'm' + Date.now(), ...memberData });
+                }
+                this.saveData();
+                this.closeModal('memberModal');
+                this.render();
+            }
+
+            deleteMember() {
+                const id = document.getElementById('memberIdInput').value;
+                if (this.state.tasks.some(t => t.assigneeId === id)) {
+                    return alert('このメンバーにはタスクが割り当てられています。先にタスクの担当者を変更するか削除してください。');
+                }
+                if (!confirm('削除しますか？')) return;
+                this.state.members = this.state.members.filter(m => m.id !== id);
+                this.saveData();
+                this.closeModal('memberModal');
+                this.render();
+            }
+
+            // Gemini API Logic
+            saveApiKey() {
+                this.state.apiKey = document.getElementById('apiKeyInput').value;
+                this.state.settings.browserNotification = document.getElementById('browserNotifyCheck').checked;
+                this.state.settings.soundNotification = document.getElementById('soundNotifyCheck').checked;
+                this.saveData();
+                document.getElementById('apiSettingModal').classList.add('hidden');
+                this.showToast('設定を保存しました');
+            }
+
+            async callGemini(prompt) {
+                if (!this.state.apiKey) {
+                    alert('APIキーが設定されていません。右上の歯車アイコンから設定してください。');
+                    return null;
+                }
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.state.apiKey}`;
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+                    const data = await res.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text;
+                } catch (e) {
+                    console.error(e);
+                    alert('AI呼び出しエラー');
+                    return null;
+                }
+            }
+
+            async processAIInput() {
+                const text = document.getElementById('aiPromptInput').value;
+                if (!text) return;
+                
+                document.getElementById('aiInputStep1').classList.add('hidden');
+                document.getElementById('aiInputStep2').classList.remove('hidden');
+
+                const membersList = this.state.members.map(m => m.name).join(', ');
+                const prompt = `
+                    Parse this task request into JSON.
+                    Members: ${membersList}. If name matches fuzzily, use exact name.
+                    Input: "${text}"
+                    Return JSON: { "title": string, "desc": string, "assigneeName": string (from list or empty), "priority": "緊急"|"高"|"中"|"低" }
+                `;
+                
+                const result = await this.callGemini(prompt);
+                if (result) {
+                    try {
+                        const clean = result.replace(/```json|```/g, '').trim();
+                        const data = JSON.parse(clean);
+                        
+                        // マッチング
+                        const member = this.state.members.find(m => m.name === data.assigneeName) || this.state.members[0];
+                        
+                        this.closeModal('voiceModal');
+                        this.openTaskModal(null, member.id);
+                        document.getElementById('taskTitleInput').value = data.title;
+                        document.getElementById('taskDescInput').value = data.desc;
+                        document.getElementById('taskPriorityInput').value = data.priority || '中';
+                        
+                        document.getElementById('aiSuggestionBadge').classList.remove('hidden');
+                        document.getElementById('aiSourceText').textContent = text;
+                    } catch (e) {
+                        alert('解析に失敗しました');
+                    }
+                }
+                
+                document.getElementById('aiInputStep1').classList.remove('hidden');
+                document.getElementById('aiInputStep2').classList.add('hidden');
+                document.getElementById('aiPromptInput').value = '';
+            }
+
+            async polishDescription() {
+                const desc = document.getElementById('taskDescInput').value;
+                const title = document.getElementById('taskTitleInput').value;
+                if (!desc && !title) return;
+                
+                const prompt = `ビジネスライクに推敲して: タイトル「${title}」, 内容「${desc}」`;
+                const res = await this.callGemini(prompt);
+                if (res) document.getElementById('taskDescInput').value = res.trim();
+            }
+
+            async generateSubtasks() {
+                const title = document.getElementById('taskTitleInput').value;
+                if (!title) return;
+                const prompt = `タスク「${title}」を達成するためのサブタスクを3〜5個、JSON配列 ["手順1", "手順2"] で返して`;
+                const res = await this.callGemini(prompt);
+                if (res) {
+                    try {
+                        const arr = JSON.parse(res.replace(/```json|```/g, '').trim());
+                        arr.forEach(t => this.addSubtaskItem(t));
+                    } catch(e){}
+                }
+            }
+
+            // Utils
+            closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+            openVoiceModal() { document.getElementById('voiceModal').classList.remove('hidden'); }
+            showToast(msg) {
+                const div = document.createElement('div');
+                div.className = 'toast-enter bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-bold flex items-center gap-2';
+                div.innerHTML = `<i class="fa-solid fa-check text-green-400"></i> ${msg}`;
+                document.getElementById('toastContainer').appendChild(div);
+                setTimeout(() => div.remove(), 3000);
+            }
+        }
+
+        // Init App
+        const app = new TodoApp();
+    </script>
+</body>
+</html>
