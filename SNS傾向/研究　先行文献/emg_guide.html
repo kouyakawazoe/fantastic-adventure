@@ -14,6 +14,61 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        /* パスワード保護用のスタイル */
+        #password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f0f7ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        .login-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+        }
+        .login-box h2 {
+            color: #2c7be5;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 1rem;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        .login-box button {
+            background: #2c7be5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+        .login-box button:hover {
+            background: #1a5bb8;
+        }
+        #main-content {
+            display: none; /* 初期状態は非表示 */
+        }
+
         :root {
             /* 優しい色合いに変更 */
             --primary-color: #2c7be5;       /* 信頼感のある青 */
@@ -294,7 +349,22 @@
 </head>
 <body>
 
-    <header>
+    <!-- パスワード入力画面 -->
+    <div id="password-overlay">
+        <div class="login-box">
+            <div style="margin-bottom: 1rem;">
+                <img src="IMG_3067.jpg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+            </div>
+            <h2>閲覧パスワード</h2>
+            <p style="font-size: 0.8rem; color: #666; margin-bottom: 1rem;">ご案内したパスワードを入力してください</p>
+            <input type="password" id="password-input" placeholder="パスワードを入力">
+            <button onclick="checkPassword()">表示する</button>
+            <p id="error-msg" style="color: red; font-size: 0.8rem; margin-top: 10px; display: none;">パスワードが正しくありません</p>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <header>
         <div class="header-content">
             <span class="org-name">STROKE LAB</span>
             <h1>筋電図検査のご案内</h1>
@@ -496,6 +566,25 @@
         </section>
 
     </div>
+
+    <script>
+        function checkPassword() {
+            const password = document.getElementById('password-input').value;
+            // ここにパスワードを設定します（例: strokelab）
+            if (password === 'strokelab') {
+                document.getElementById('password-overlay').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        }
+        // Enterキーでも送信できるようにする
+        document.getElementById('password-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+    </script>
 
 </body>
 </html>
