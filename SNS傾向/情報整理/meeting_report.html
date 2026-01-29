@@ -3,21 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STROKE LAB | ミーティング共有事項</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <title>STROKE LAB | 筋電図測定マニュアル</title>
     
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
-            /* STROKE LAB風 カラーパレット */
-            --primary-color: #007bff;      /* メインの青 */
-            --accent-color: #17a2b8;       /* 水色 */
-            --bg-color: #f4f6f9;           /* 背景の薄いグレー */
-            --text-color: #333;
+            --primary-color: #007bff;
+            --accent-color: #17a2b8;
+            --bg-color: #f4f6f9;
+            --text-main: #333333;
+            --text-light: #666666;
             --card-bg: #ffffff;
-            --alert-yellow: #fff3cd;
-            --alert-red: #f8d7da;
-            --success-green: #d4edda;
+            --warning-bg: #fff3cd;
+            --warning-text: #856404;
+            --danger-bg: #f8d7da;
+            --danger-text: #721c24;
+            --info-bg: #e2e6ea;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
         }
 
         * {
@@ -29,201 +39,396 @@
         body {
             font-family: 'Noto Sans JP', sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             line-height: 1.6;
-            scroll-behavior: smooth; /* スムーズスクロール */
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* ヘッダー部分 */
+        /* Header */
         header {
             background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
             color: white;
-            padding: 40px 20px;
+            padding: 2.5rem 1rem;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
         }
 
-        .brand {
+        .header-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .org-name {
             font-size: 0.9rem;
+            font-weight: 700;
             opacity: 0.9;
-            margin-bottom: 5px;
-            font-weight: bold;
+            letter-spacing: 0.05em;
+            display: block;
+            margin-bottom: 0.5rem;
         }
 
         h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
         }
 
         .subtitle {
-            font-size: 1rem;
-            background: rgba(255,255,255,0.2);
             display: inline-block;
-            padding: 5px 15px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 1rem;
             border-radius: 20px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Summary Box specific styles */
+        .summary-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .summary-title {
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        /* コンテンツエリア */
+        /* Container */
         .container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0 1rem 4rem;
         }
 
-        /* ナビゲーションボタン */
-        .nav-buttons {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
+        /* Navigation */
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 3rem;
         }
 
-        .nav-btn {
-            flex: 1;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
+        .nav-item {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
             text-decoration: none;
-            color: var(--text-color);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            color: var(--text-main);
             display: flex;
             align-items: center;
-            transition: transform 0.2s;
-            border-left: 5px solid var(--accent-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid var(--accent-color);
         }
 
-        .nav-btn:hover {
+        .nav-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+
+        .nav-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            background: rgba(0, 123, 255, 0.1);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .nav-text {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-color);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-right: 0.75rem;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Alert Boxes */
+        .alert {
+            padding: 1.2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border-left: 4px solid transparent;
+            font-size: 0.95rem;
+        }
+        
+        .alert-info {
+            background-color: #e2e6ea;
+            color: var(--text-main);
+            border-left-color: var(--text-light);
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+
+        .alert strong {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-size: 1rem;
+        }
+
+        /* Flow Chart */
+        .flow-wrapper {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto; /* Allow scrolling on small screens if needed */
+            margin-bottom: 2rem;
+        }
+
+        .flow-chart {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            min-width: 600px; /* Ensure layout doesn't break on very small screens before stacking */
+        }
+
+        .flow-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            padding: 0 0.5rem;
+        }
+
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.8rem;
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+            display: block;
+        }
+
+        .step-desc {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            line-height: 1.3;
+        }
+
+        /* Arrow Line */
+        .flow-line {
+            position: absolute;
+            top: 20px;
+            left: 5%;
+            right: 5%;
+            height: 2px;
+            background: #ddd;
+            z-index: 1;
+        }
+        
+        /* List Styles */
+        ul.custom-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        ul.custom-list li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        ul.custom-list li::before {
+            content: "\f00c";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            color: var(--primary-color);
+        }
+
+        /* Color Dots for Electrode Positions */
+        .color-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .dot-red { background-color: #dc3545; }
+        .dot-blue { background-color: #007bff; }
+        .dot-yellow { background-color: #ffc107; }
+        .dot-green { background-color: #28a745; }
+
+        .electrode-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .electrode-item {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+        
+        /* Image Placeholders */
+        .image-container {
+            width: 100%;
+            margin: 15px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+        }
+        
+        .image-placeholder {
+            width: 100%;
+            height: auto;
+            display: block;
+            background-color: #e9ecef;
+            object-fit: cover;
+        }
+        
+        figure {
+            margin: 0;
+        }
+        
+        figcaption {
+            background: #f8f9fa;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+        }
+
+        /* Visual Steps Grid for Images */
+        .steps-visual-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .visual-step-card {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        
+        .visual-step-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
-        .num-badge {
+        .step-header {
+            padding: 10px;
             background: var(--primary-color);
             color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-weight: bold;
-            margin-right: 15px;
-        }
-
-        /* カードデザイン共通 */
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 40px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            border-top: 5px solid var(--primary-color);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 25px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 15px;
-        }
-
-        .card-title {
-            font-size: 1.5rem;
-            color: #333;
-            font-weight: bold;
-        }
-
-        .icon-large {
-            font-size: 1.8rem;
-            color: var(--primary-color);
-            margin-right: 15px;
-        }
-
-        /* アラートボックス（黄色・赤など） */
-        .alert-box {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 5px solid transparent;
-        }
-
-        .alert-warning {
-            background-color: var(--alert-yellow);
-            color: #856404;
-            border-color: #ffeeba;
-        }
-
-        .alert-danger {
-            background-color: var(--alert-red);
-            color: #721c24;
-            border-color: #f5c6cb;
-        }
-
-        .alert-title {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        /* フローチャート（ステップ表示） */
-        .flow-container {
-            display: flex;
-            justify-content: space-between;
-            margin: 30px 0;
             text-align: center;
-            gap: 10px;
-        }
-
-        .step {
-            flex: 1;
-            background: #f8f9fa;
-            padding: 15px 10px;
-            border-radius: 8px;
-            position: relative;
-        }
-
-        /* 矢印の簡易表現 */
-        .step:not(:last-child)::after {
-            content: "▶";
-            position: absolute;
-            right: -10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #ccc;
-            z-index: 1;
-        }
-
-        .step-num {
-            background: var(--primary-color);
-            color: white;
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            margin: 0 auto 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-        }
-
-        .step-title {
-            font-weight: bold;
             font-size: 0.9rem;
-            display: block;
         }
 
-        /* スマホ向けの調整 */
+        .step-body {
+            padding: 10px;
+        }
+
+        /* Mobile Responsive */
         @media (max-width: 600px) {
             h1 { font-size: 1.5rem; }
-            .nav-buttons { flex-direction: column; }
-            .flow-container { flex-direction: column; gap: 20px; }
-            .step:not(:last-child)::after {
-                content: "▼";
-                right: 50%;
-                top: auto;
-                bottom: -18px;
-                transform: translateX(50%);
+            .card { padding: 1.5rem; }
+            
+            .flow-chart {
+                min-width: auto;
+                flex-direction: column;
+                align-items: center;
+                gap: 1.5rem;
+            }
+
+            .flow-line { display: none; }
+
+            .flow-step {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .flow-step:not(:last-child)::after {
+                content: "\f0d7";
+                font-family: "Font Awesome 6 Free";
+                font-weight: 900;
+                position: absolute;
+                bottom: -1.4rem;
+                color: #ccc;
+                font-size: 1.2rem;
             }
         }
     </style>
@@ -231,88 +436,199 @@
 <body>
 
     <header>
-        <div class="brand">STROKE LAB</div>
-        <h1>ミーティング共有事項</h1>
-        <span class="subtitle">全スタッフ向け 月次報告</span>
+        <div class="header-content">
+            <span class="org-name">STROKE LAB</span>
+            <h1>筋電図測定マニュアル</h1>
+            <span class="subtitle">スタッフ共有資料</span>
+        </div>
     </header>
 
     <div class="container">
-        <div class="alert-box" style="background: white; border-left: 5px solid #ccc;">
-            <i class="fas fa-info-circle"></i> <strong>今回の報告内容：</strong>
-            大きく分けて以下の2点の重要事項があります。
-        </div>
-
-        <nav class="nav-buttons">
-            <a href="#section1" class="nav-btn">
-                <span class="num-badge">01</span>
-                <span>無料相談シートについて</span>
+        
+        <!-- Navigation -->
+        <nav class="nav-grid">
+            <a href="#section1" class="nav-item">
+                <span class="nav-number">01</span>
+                <span class="nav-text">測定の概要・準備</span>
             </a>
-            <a href="#section2" class="nav-btn">
-                <span class="num-badge">02</span>
-                <span>患者さん共有について</span>
+            <a href="#section2" class="nav-item">
+                <span class="nav-number">02</span>
+                <span class="nav-text">測定手順・フロー</span>
             </a>
         </nav>
 
-        <div id="section1" class="card">
-            <div class="card-header">
-                <i class="fas fa-file-alt icon-large"></i>
-                <h2 class="card-title">無料相談シートについて</h2>
-            </div>
-            
-            <div class="alert-box alert-warning">
-                <span class="alert-title"><i class="fas fa-exclamation-triangle"></i> 現状の問題点</span>
-                ブラッシュアップで用紙を新しくしたにも関わらず、<strong>3週間以上経っても作成していない・提出していない方</strong>が数名いらっしゃいます。
+        <!-- Section 1: 概要・準備 -->
+        <section id="section1" class="card">
+            <div class="section-header">
+                <span class="section-badge">01</span>
+                <h2 class="section-title">測定の概要・準備</h2>
             </div>
 
-            <h3><i class="fas fa-check-circle"></i> 正しいフロー（必ず守ってください）</h3>
-            
-            <div class="flow-container">
-                <div class="step">
-                    <div class="step-num">1</div>
-                    <span class="step-title">シート作成</span>
-                    <small>無料相談シートを作成する</small>
-                </div>
-                <div class="step">
-                    <div class="step-num">2</div>
-                    <span class="step-title">リーダーチェック</span>
-                    <small>リーダーに確認・チェックをいただく</small>
-                </div>
-                <div class="step">
-                    <div class="step-num">3</div>
-                    <span class="step-title">名簿にチェック</span>
-                    <small>利用者名簿に完了チェックを入れる</small>
-                </div>
-            </div>
-        </div>
-
-        <div id="section2" class="card" style="border-top-color: var(--accent-color);">
-            <div class="card-header">
-                <i class="fas fa-users icon-large" style="color: var(--accent-color);"></i>
-                <h2 class="card-title">患者さん共有について</h2>
-            </div>
-
-            <div class="alert-box alert-danger">
-                <span class="alert-title"><i class="fas fa-ban"></i> 抜け漏れが発生しています</span>
-                以下の項目で<strong>記入漏れ</strong>が見られます：
-                <ul style="margin-left: 20px; margin-top: 5px;">
-                    <li>連絡待ちの方のステータス更新</li>
-                    <li>終了者の最終来日日の記入</li>
+            <div class="alert alert-info">
+                <strong><i class="fas fa-info-circle"></i> 測定の基本情報</strong>
+                <ul class="custom-list" style="margin-top: 10px;">
+                    <li><strong>所要時間：</strong>準備5分 ／ 測定15分 ／ 説明5分</li>
+                    <li><strong>実施体制：</strong>2名（担当者1名・補助者1名）</li>
+                    <li><strong>タイミング：</strong>初回・1ヶ月後・3ヶ月後・6ヶ月後の介入前</li>
+                    <li><strong>対象基準：</strong>見守りレベルで歩行可能、利用頻度が隔週以上の方</li>
                 </ul>
             </div>
 
-            <div style="background: #eef; padding: 15px; border-radius: 8px;">
-                <strong><i class="fas fa-question-circle"></i> なぜ最終来店日が重要なのか？</strong>
-                <p style="margin-top: 5px; font-size: 0.9rem;">
-                    「直近の来店」か「期間が空いている」かによって、リーダーとの対応方針（早期フォローアップか、再アプローチ検討か）が変わるためです。
-                </p>
+            <div class="summary-box">
+                <div class="summary-title"><i class="fas fa-tasks"></i> 事前準備と役割</div>
+                
+                <div class="image-container">
+                    <figure>
+                        <!-- Image Placeholder: Replace src with actual image of setup environment -->
+                        <img src="https://placehold.co/600x300/e9ecef/6c757d?text=Setup+Environment+Photo" alt="測定環境の全体写真" class="image-placeholder">
+                        <figcaption><i class="fas fa-camera"></i> 実際の測定環境（入り口側中央ベッド・コーン設置例）</figcaption>
+                    </figure>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <strong><i class="fas fa-map-marker-alt"></i> 測定環境・物品</strong><br>
+                    場所：入り口側中央ベッド<br>
+                    物品：カラーコーン（4個）、肘置きのない椅子、付箋、ストップウォッチ、メジャー、筋電図デバイス
+                </div>
+                <div>
+                    <strong><i class="fas fa-user-friends"></i> 役割分担</strong><br>
+                    <small>担当者：誘導、動作説明、疲労感確認、結果説明</small><br>
+                    <small>補助者：筋電図管理、付箋貼り、椅子設営、タイマー</small>
+                </div>
             </div>
-        </div>
+
+            <div class="summary-box" style="border-left-color: var(--accent-color);">
+                <div class="summary-title" style="color: var(--accent-color);"><i class="fas fa-plug"></i> 筋電図の設定（電極位置）</div>
+                
+                <div class="image-container">
+                    <figure>
+                        <!-- Image Placeholder: Replace src with actual electrode placement diagram -->
+                        <img src="https://placehold.co/600x300/e3f2fd/0d6efd?text=Electrode+Placement+Diagram" alt="電極貼付位置の図解" class="image-placeholder">
+                        <figcaption><i class="fas fa-camera"></i> 電極貼付位置のイメージ</figcaption>
+                    </figure>
+                </div>
+
+                <div class="electrode-grid">
+                    <div class="electrode-item"><span class="color-dot dot-red"></span><strong>赤：</strong>右前脛骨筋<br><small>（肩：右三角筋前部/中部）</small></div>
+                    <div class="electrode-item"><span class="color-dot dot-blue"></span><strong>青：</strong>右内側腓腹筋<br><small>（肩：右僧帽筋上部）</small></div>
+                    <div class="electrode-item"><span class="color-dot dot-yellow"></span><strong>黄：</strong>左前脛骨筋<br><small>（肩：左三角筋前部/中部）</small></div>
+                    <div class="electrode-item"><span class="color-dot dot-green"></span><strong>緑：</strong>左内側腓腹筋<br><small>（肩：左僧帽筋上部）</small></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: 測定フロー -->
+        <section id="section2" class="card">
+            <div class="section-header">
+                <span class="section-badge" style="background-color: var(--accent-color);">02</span>
+                <h2 class="section-title">測定手順・フロー</h2>
+            </div>
+            
+            <p style="margin-bottom: 15px; font-size: 0.9rem;">
+                <i class="fas fa-shoe-prints"></i> <strong>条件：</strong>裸足で測定、歩行補助具使用可、見守りレベル
+            </p>
+
+            <!-- Flow Chart (Overview) -->
+            <div class="flow-wrapper">
+                <div class="flow-chart">
+                    <div class="flow-line"></div>
+                    <div class="flow-step">
+                        <div class="step-icon"><i class="fas fa-walking"></i></div>
+                        <span class="step-title">1. 6m歩行</span>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-icon"><i class="fas fa-chair"></i></div>
+                        <span class="step-title">2. TUG</span>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-icon"><i class="fas fa-arrows-alt-h"></i></div>
+                        <span class="step-title">3. FRT</span>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-icon"><i class="fas fa-child"></i></div>
+                        <span class="step-title">4. 上肢屈曲</span>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-icon"><i class="fas fa-universal-access"></i></div>
+                        <span class="step-title">5. 上肢外転</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Steps (Details with Images) -->
+            <h3 style="font-size: 1.1rem; color: var(--text-main); margin-top: 2rem; border-left: 4px solid var(--accent-color); padding-left: 10px;">
+                検査実施イメージ詳細
+            </h3>
+            
+            <div class="steps-visual-grid">
+                <!-- Step 1 -->
+                <div class="visual-step-card">
+                    <div class="step-header">1. 6m歩行テスト</div>
+                    <img src="https://placehold.co/400x250/f8f9fa/adb5bd?text=6m+Walk+Test" alt="6m歩行の様子" class="image-placeholder">
+                    <div class="step-body">
+                        <small><strong><i class="fas fa-exclamation-circle"></i> ポイント</strong></small><br>
+                        <ul class="custom-list" style="font-size: 0.85rem;">
+                            <li>コーン間6m + 助走/減速1m</li>
+                            <li>快適速度1回／最大速度1回</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="visual-step-card">
+                    <div class="step-header">2. TUG (Time Up & Go)</div>
+                    <img src="https://placehold.co/400x250/f8f9fa/adb5bd?text=TUG+Test" alt="TUGの様子" class="image-placeholder">
+                    <div class="step-body">
+                        <small><strong><i class="fas fa-exclamation-circle"></i> ポイント</strong></small><br>
+                        <ul class="custom-list" style="font-size: 0.85rem;">
+                            <li>椅子から3mの位置にコーン</li>
+                            <li>左右回り 各1回（快適速度）</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="visual-step-card">
+                    <div class="step-header">3. FRT (前方リーチ)</div>
+                    <img src="https://placehold.co/400x250/f8f9fa/adb5bd?text=FRT+Test" alt="FRTの様子" class="image-placeholder">
+                    <div class="step-body">
+                        <small><strong><i class="fas fa-exclamation-circle"></i> ポイント</strong></small><br>
+                        <ul class="custom-list" style="font-size: 0.85rem;">
+                            <li>壁を使用し非麻痺側でリーチ</li>
+                            <li>2回測定（付箋で目印）</li>
+                        </ul>
+                    </div>
+                </div>
+
+                 <!-- Step 4 & 5 -->
+                 <div class="visual-step-card">
+                    <div class="step-header">4-5. 上肢屈曲・外転</div>
+                    <img src="https://placehold.co/400x250/f8f9fa/adb5bd?text=Upper+Limb+Test" alt="上肢検査の様子" class="image-placeholder">
+                    <div class="step-body">
+                        <small><strong><i class="fas fa-exclamation-circle"></i> ポイント</strong></small><br>
+                        <ul class="custom-list" style="font-size: 0.85rem;">
+                            <li>両側→右→左 の順</li>
+                            <li>各2回ずつ測定</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-success" style="margin-top: 2rem;">
+                <strong><i class="fas fa-check-square"></i> 最終確認チェックリスト</strong>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; font-size: 0.9rem;">
+                    <label><input type="checkbox"> 同意書取得</label>
+                    <label><input type="checkbox"> 物品の設置</label>
+                    <label><input type="checkbox"> 電極位置の確認</label>
+                    <label><input type="checkbox"> 測定順序の確認</label>
+                    <label><input type="checkbox"> 波形の保存</label>
+                    <label><input type="checkbox"> 結果説明</label>
+                    <label><input type="checkbox"> 併用評価</label>
+                </div>
+            </div>
+        </section>
 
     </div>
-
-    <footer style="text-align: center; padding: 20px; color: #666; font-size: 0.8rem;">
-        &copy; 2026 STROKE LAB Meeting Archive
-    </footer>
 
 </body>
 </html>

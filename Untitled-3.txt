@@ -14,61 +14,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* パスワード保護用のスタイル */
-        #password-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #f0f7ff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            font-family: 'Noto Sans JP', sans-serif;
-        }
-        .login-box {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 300px;
-            width: 90%;
-        }
-        .login-box h2 {
-            color: #2c7be5;
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-        }
-        .login-box input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 1rem;
-            border: 2px solid #eee;
-            border-radius: 8px;
-            font-size: 1rem;
-            text-align: center;
-        }
-        .login-box button {
-            background: #2c7be5;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-        }
-        .login-box button:hover {
-            background: #1a5bb8;
-        }
-        #main-content {
-            display: none; /* 初期状態は非表示 */
-        }
-
         :root {
             /* 優しい色合いに変更 */
             --primary-color: #2c7be5;       /* 信頼感のある青 */
@@ -349,22 +294,7 @@
 </head>
 <body>
 
-    <!-- パスワード入力画面 -->
-    <div id="password-overlay">
-        <div class="login-box">
-            <div style="margin-bottom: 1rem;">
-                <img src="IMG_3067.jpg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
-            </div>
-            <h2>閲覧パスワード</h2>
-            <p style="font-size: 0.8rem; color: #666; margin-bottom: 1rem;">ご案内したパスワードを入力してください</p>
-            <input type="password" id="password-input" placeholder="パスワードを入力">
-            <button onclick="checkPassword()">表示する</button>
-            <p id="error-msg" style="color: red; font-size: 0.8rem; margin-top: 10px; display: none;">パスワードが正しくありません</p>
-        </div>
-    </div>
-
-    <div id="main-content">
-        <header>
+    <header>
         <div class="header-content">
             <span class="org-name">STROKE LAB</span>
             <h1>筋電図検査のご案内</h1>
@@ -404,48 +334,20 @@
                 <div class="benefit-icon"><i class="fas fa-chart-line"></i></div>
                 <div class="benefit-content">
                     <h3>上達の変化が実感できます</h3>
-                    <p>定期的に検査を行うことで、「以前よりこれだけ力が入りやすくなった」「無駄な力が抜けてきた」といった変化を、感覚だけでなく客観的な記録として確認できます。</p>
+                    <p>定期的に検査を行うことで、「1ヶ月前よりこれだけ力が入りやすくなった」「無駄な力が抜けてきた」といった変化を、感覚だけでなく客観的な記録として確認できます。</p>
                 </div>
             </div>
 
             <!-- イメージ図 -->
             <div class="image-container">
                 <figure>
-                    <img src="IMG_3067.jpg" alt="使用機器：筋電図センサー" class="image-placeholder">
-                    <figcaption>使用機器：最新のワイヤレス筋電図センサーを使用します</figcaption>
-                </figure>
-            </div>
-
-            <div class="image-container">
-                <figure>
-                    <img src="Gemini_Generated_Image_ie1590ie1590ie15.png" alt="装着イメージ" class="image-placeholder">
-                    <figcaption>装着イメージ：手足にセンサーを装着して測定します</figcaption>
+                    <!-- ここに筋電図の波形イメージ画像を入れる -->
+                    <img src="https://placehold.co/600x300/f8f9fa/adb5bd?text=%E7%AD%8B%E9%9B%BB%E5%9B%B3%E3%81%AE%E6%B3%A2%E5%BD%A2%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8" alt="筋電図の波形イメージ" class="image-placeholder">
+                    <figcaption>実際の画面イメージ：筋肉が動くと波が大きく表示されます</figcaption>
                 </figure>
             </div>
 
             <div class="faq-box">
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;">
-                    <img src="Gemini_Generated_Image_1v3br11v3br11v3b.png" alt="装着イメージ1" style="width: 45%; min-width: 200px; border-radius: 8px; box-shadow: var(--shadow);">
-                    <img src="Gemini_Generated_Image_ujawdrujawdrujaw.png" alt="装着イメージ2" style="width: 45%; min-width: 200px; border-radius: 8px; box-shadow: var(--shadow);">
-                </div>
-                <div class="faq-item">
-                    <div class="faq-q"><i class="fas fa-calendar-alt"></i> 検査のタイミング</div>
-                    <div class="faq-a">
-                        検査は、<strong>初回、1か月後、3か月後、6か月後</strong>の計4回実施します。経過を追うことで、リハビリの効果をより詳細に分析できます。
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-q"><i class="fas fa-user-shield"></i> 途中でやめることはできますか？</div>
-                    <div class="faq-a">
-                        はい、可能です。<strong>途中で検査を中止することもできます</strong>。その際は、ご希望に応じてデータの破棄も適切に行いますので、ご安心ください。
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-q"><i class="fas fa-graduation-cap"></i> データの活用について</div>
-                    <div class="faq-a">
-                        母数が集まり次第、将来的には<strong>学会発表や論文報告</strong>など、リハビリテーション医学の発展のために活用させていただくことを視野に入れています。
-                    </div>
-                </div>
                 <div class="faq-item">
                     <div class="faq-q"><i class="fas fa-question-circle"></i> 痛くありませんか？</div>
                     <div class="faq-a">
@@ -455,8 +357,7 @@
                 <div class="faq-item">
                     <div class="faq-q"><i class="fas fa-question-circle"></i> 服装はどうすればいいですか？</div>
                     <div class="faq-a">
-                        足や腕にシールを貼らせていただきます。その際に裾をまくらせていただいたりと、ご協力をお願いします。<br>
-                        検査は裸足や装具着用、杖を使用した安全な状態で実施いたします。
+                        足や腕にシールを貼りますので、裾のまくりやすいズボンなど、動きやすい服装でお越しください。検査は裸足で行います。
                     </div>
                 </div>
             </div>
@@ -466,7 +367,7 @@
         <section id="flow" class="card">
             <div class="section-header">
                 <h2 class="section-title">当日の検査の流れ</h2>
-                <p style="margin-top: 10px;">所要時間は全部で20分～30分程度です</p>
+                <p style="margin-top: 10px;">所要時間は全部で15分～20分程度です</p>
             </div>
 
             <div class="step-list">
@@ -486,7 +387,7 @@
                 <div class="step-item">
                     <div class="step-number">2</div>
                     <div class="step-content">
-                        <div class="step-title"><i class="fas fa-walking"></i> 筋電図検査（約20～30分）</div>
+                        <div class="step-title"><i class="fas fa-walking"></i> 歩く・動く検査（約15分）</div>
                         <p class="step-desc">以下の4つの動作を行っていただき、その時の筋肉の動きを記録します。</p>
                         
                         <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -521,19 +422,7 @@
                         <div class="step-title"><i class="fas fa-comments"></i> 結果のご説明</div>
                         <p class="step-desc">
                             撮影した動画と波形データを見ながら、お体の状態やリハビリの進み具合について担当スタッフが詳しくご説明します。<br>
-                            現状を把握した上で、最適なセラピー内容を決定します。
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Step 4 -->
-                <div class="step-item">
-                    <div class="step-number">4</div>
-                    <div class="step-content">
-                        <div class="step-title"><i class="fas fa-user-md"></i> 通常セラピー（約60～90分）</div>
-                        <p class="step-desc">
-                            検査結果をふまえ、<strong>いつものセラピー</strong>を行います。<br>
-                            検査で得られた客観的なデータを、その日のセラピー内容に即座に反映させ、より効果的なアプローチを実施します。
+                            今後のリハビリ計画の参考にさせていただきます。
                         </p>
                     </div>
                 </div>
@@ -548,13 +437,13 @@
                         2. src="..." の部分に、表示したい動画ファイルのパス（ファイル名）を指定します。
                         3. poster="..." は動画再生前に表示されるサムネイル画像です。
                     -->
-                    <video controls playsinline webkit-playsinline preload="metadata" width="100%" style="display: block; background: #000; border-radius: 12px 12px 0 0;">
-                        <!-- iPhone/Safari対応のため、属性を追加しファイル名をエンコード -->
-                        <source src="%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%20(2).MP4" type="video/mp4">
+                    <video controls playsinline width="100%" style="display: block; background: #000; border-radius: 12px 12px 0 0;">
+                        <!-- サンプル動画としてフリー素材を使用しています。実際には 'movie.mp4' などのファイル名を指定してください -->
+                        <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
                         <p>動画を再生するには、videoタグをサポートしたブラウザが必要です。</p>
                     </video>
                     
-                    <figcaption>実際の検査・セラピー風景（※動画）</figcaption>
+                    <figcaption>実際の検査風景（※サンプル動画が再生されます）</figcaption>
                 </figure>
             </div>
 
@@ -566,25 +455,6 @@
         </section>
 
     </div>
-
-    <script>
-        function checkPassword() {
-            const password = document.getElementById('password-input').value;
-            // ここにパスワードを設定します（例: strokelab）
-            if (password === 'strokelab') {
-                document.getElementById('password-overlay').style.display = 'none';
-                document.getElementById('main-content').style.display = 'block';
-            } else {
-                document.getElementById('error-msg').style.display = 'block';
-            }
-        }
-        // Enterキーでも送信できるようにする
-        document.getElementById('password-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
-        });
-    </script>
 
 </body>
 </html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STROKE LAB | ミーティング共有事項</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* STROKE LAB風 カラーパレット */
+            --primary-color: #007bff;      /* メインの青 */
+            --accent-color: #17a2b8;       /* 水色 */
+            --bg-color: #f4f6f9;           /* 背景の薄いグレー */
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --alert-yellow: #fff3cd;
+            --alert-red: #f8d7da;
+            --success-green: #d4edda;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            scroll-behavior: smooth; /* スムーズスクロール */
+        }
+
+        /* ヘッダー部分 */
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .brand {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        /* コンテンツエリア */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ナビゲーションボタン */
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--text-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            transition: transform 0.2s;
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .num-badge {
+            background: var(--primary-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        /* カードデザイン共通 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border-top: 5px solid var(--primary-color);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .icon-large {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin-right: 15px;
+        }
+
+        /* アラートボックス（黄色・赤など） */
+        .alert-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid transparent;
+        }
+
+        .alert-warning {
+            background-color: var(--alert-yellow);
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .alert-danger {
+            background-color: var(--alert-red);
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .alert-title {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* フローチャート（ステップ表示） */
+        .flow-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            text-align: center;
+            gap: 10px;
+        }
+
+        .step {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 15px 10px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        /* 矢印の簡易表現 */
+        .step:not(:last-child)::after {
+            content: "▶";
+            position: absolute;
+            right: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #ccc;
+            z-index: 1;
+        }
+
+        .step-num {
+            background: var(--primary-color);
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .step-title {
+            font-weight: bold;
+            font-size: 0.9rem;
+            display: block;
+        }
+
+        /* スマホ向けの調整 */
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5rem; }
+            .nav-buttons { flex-direction: column; }
+            .flow-container { flex-direction: column; gap: 20px; }
+            .step:not(:last-child)::after {
+                content: "▼";
+                right: 50%;
+                top: auto;
+                bottom: -18px;
+                transform: translateX(50%);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">STROKE LAB</div>
+        <h1>ミーティング共有事項</h1>
+        <span class="subtitle">全スタッフ向け 月次報告</span>
+    </header>
+
+    <div class="container">
+        <div class="alert-box" style="background: white; border-left: 5px solid #ccc;">
+            <i class="fas fa-info-circle"></i> <strong>今回の報告内容：</strong>
+            大きく分けて以下の2点の重要事項があります。
+        </div>
+
+        <nav class="nav-buttons">
+            <a href="#section1" class="nav-btn">
+                <span class="num-badge">01</span>
+                <span>無料相談シートについて</span>
+            </a>
+            <a href="#section2" class="nav-btn">
+                <span class="num-badge">02</span>
+                <span>患者さん共有について</span>
+            </a>
+        </nav>
+
+        <div id="section1" class="card">
+            <div class="card-header">
+                <i class="fas fa-file-alt icon-large"></i>
+                <h2 class="card-title">無料相談シートについて</h2>
+            </div>
+            
+            <div class="alert-box alert-warning">
+                <span class="alert-title"><i class="fas fa-exclamation-triangle"></i> 現状の問題点</span>
+                ブラッシュアップで用紙を新しくしたにも関わらず、<strong>3週間以上経っても作成していない・提出していない方</strong>が数名いらっしゃいます。
+            </div>
+
+            <h3><i class="fas fa-check-circle"></i> 正しいフロー（必ず守ってください）</h3>
+            
+            <div class="flow-container">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <span class="step-title">シート作成</span>
+                    <small>無料相談シートを作成する</small>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <span class="step-title">リーダーチェック</span>
+                    <small>リーダーに確認・チェックをいただく</small>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <span class="step-title">名簿にチェック</span>
+                    <small>利用者名簿に完了チェックを入れる</small>
+                </div>
+            </div>
+        </div>
+
+        <div id="section2" class="card" style="border-top-color: var(--accent-color);">
+            <div class="card-header">
+                <i class="fas fa-users icon-large" style="color: var(--accent-color);"></i>
+                <h2 class="card-title">患者さん共有について</h2>
+            </div>
+
+            <div class="alert-box alert-danger">
+                <span class="alert-title"><i class="fas fa-ban"></i> 抜け漏れが発生しています</span>
+                以下の項目で<strong>記入漏れ</strong>が見られます：
+                <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li>連絡待ちの方のステータス更新</li>
+                    <li>終了者の最終来日日の記入</li>
+                </ul>
+            </div>
+
+            <div style="background: #eef; padding: 15px; border-radius: 8px;">
+                <strong><i class="fas fa-question-circle"></i> なぜ最終来店日が重要なのか？</strong>
+                <p style="margin-top: 5px; font-size: 0.9rem;">
+                    「直近の来店」か「期間が空いている」かによって、リーダーとの対応方針（早期フォローアップか、再アプローチ検討か）が変わるためです。
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <footer style="text-align: center; padding: 20px; color: #666; font-size: 0.8rem;">
+        &copy; 2026 STROKE LAB Meeting Archive
+    </footer>
+
+</body>
+</html>

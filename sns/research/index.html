@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STROKE LAB | 筋電図検査のご案内</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* パスワード保護用のスタイル */
+        #password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f0f7ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        .login-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+        }
+        .login-box h2 {
+            color: #2c7be5;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 1rem;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        .login-box button {
+            background: #2c7be5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+        .login-box button:hover {
+            background: #1a5bb8;
+        }
+        #main-content {
+            display: none; /* 初期状態は非表示 */
+        }
+
+        :root {
+            /* 優しい色合いに変更 */
+            --primary-color: #2c7be5;       /* 信頼感のある青 */
+            --accent-color: #00b8d8;        /* 明るい水色 */
+            --bg-color: #f0f7ff;            /* 非常に薄い青背景 */
+            --text-main: #333333;
+            --text-light: #555555;
+            --card-bg: #ffffff;
+            --highlight-bg: #e3f2fd;        /* ハイライト用 */
+            --point-bg: #fff8e1;            /* ポイント用 */
+            --point-border: #ffecb3;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            --radius: 16px;                 /* 丸みを少し強く */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.8; /* 読みやすく行間を広めに */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Header */
+        header {
+            background: white;
+            color: var(--primary-color);
+            padding: 2rem 1rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            border-bottom: 4px solid var(--accent-color);
+        }
+
+        .header-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .org-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-light);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .subtitle {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.4rem 1.2rem;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* Container */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1rem 4rem;
+        }
+
+        /* Navigation Buttons */
+        .nav-grid {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-button {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+            border-color: var(--accent-color);
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: inline-block;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--accent-color);
+        }
+
+        /* Feature / Benefit Section */
+        .benefit-box {
+            display: flex;
+            align-items: flex-start;
+            background: var(--highlight-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .benefit-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-right: 1.5rem;
+            background: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .benefit-content h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        /* Image Containers */
+        .image-container {
+            width: 100%;
+            margin: 1.5rem 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .image-placeholder {
+            width: 100%;
+            height: auto;
+            display: block;
+            background-color: #e9ecef;
+            min-height: 250px;
+            object-fit: cover;
+        }
+        
+        figcaption {
+            background: #fafafa;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: bold;
+        }
+
+        /* Step Timeline */
+        .step-list {
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .step-item {
+            display: flex;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .step-number {
+            background: var(--accent-color);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            margin-right: 1.5rem;
+            z-index: 2;
+        }
+
+        .step-content {
+            background: white;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            padding: 1.5rem;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+        
+        .step-content:hover {
+            border-color: var(--accent-color);
+            transform: translateX(5px);
+        }
+
+        .step-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-desc {
+            font-size: 0.95rem;
+            color: var(--text-light);
+        }
+
+        /* FAQ Box */
+        .faq-box {
+            background: var(--point-bg);
+            border: 1px solid var(--point-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .faq-item {
+            margin-bottom: 1rem;
+        }
+        .faq-q {
+            font-weight: bold;
+            color: #d35400;
+            margin-bottom: 0.3rem;
+        }
+        .faq-a {
+            margin-left: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            h1 { font-size: 1.4rem; }
+            .card { padding: 1.5rem; }
+            .benefit-box { flex-direction: column; text-align: center; align-items: center; }
+            .benefit-icon { margin-right: 0; margin-bottom: 1rem; }
+            .step-item { flex-direction: column; }
+            .step-number { margin-bottom: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- パスワード入力画面 -->
+    <div id="password-overlay">
+        <div class="login-box">
+            <div style="margin-bottom: 1rem;">
+                <img src="IMG_3067.jpg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+            </div>
+            <h2>閲覧パスワード</h2>
+            <p style="font-size: 0.8rem; color: #666; margin-bottom: 1rem;">ご案内したパスワードを入力してください</p>
+            <input type="password" id="password-input" placeholder="パスワードを入力">
+            <button onclick="checkPassword()">表示する</button>
+            <p id="error-msg" style="color: red; font-size: 0.8rem; margin-top: 10px; display: none;">パスワードが正しくありません</p>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <header>
+        <div class="header-content">
+            <span class="org-name">STROKE LAB</span>
+            <h1>筋電図検査のご案内</h1>
+            <span class="subtitle">リハビリの効果を「見える化」します</span>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <nav class="nav-grid">
+            <a href="#about" class="nav-button"><i class="fas fa-search-plus"></i> 筋電図のメリット</a>
+            <a href="#flow" class="nav-button"><i class="fas fa-walking"></i> 検査の流れ</a>
+        </nav>
+
+        <!-- Section 1: 筋電図とは？ -->
+        <section id="about" class="card">
+            <div class="section-header">
+                <h2 class="section-title">筋電図検査でわかること</h2>
+            </div>
+
+            <p style="text-align: center; margin-bottom: 2rem;">
+                筋肉が活動するときに出るごく微弱な信号をキャッチして、<br class="pc-only">
+                <strong>「どの筋肉が」「どのくらい」</strong>頑張っているかを調べる検査です。
+            </p>
+
+            <!-- メリット1 -->
+            <div class="benefit-box">
+                <div class="benefit-icon"><i class="fas fa-eye"></i></div>
+                <div class="benefit-content">
+                    <h3>筋肉の活動が「見える化」されます</h3>
+                    <p>外見からは分かりにくい筋肉の使い方のクセや、麻痺した筋肉がリハビリでどれくらい反応するようになったかを、波形データとして目で見ることができます。</p>
+                </div>
+            </div>
+
+            <!-- メリット2 -->
+            <div class="benefit-box">
+                <div class="benefit-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="benefit-content">
+                    <h3>上達の変化が実感できます</h3>
+                    <p>定期的に検査を行うことで、「以前よりこれだけ力が入りやすくなった」「無駄な力が抜けてきた」といった変化を、感覚だけでなく客観的な記録として確認できます。</p>
+                </div>
+            </div>
+
+            <!-- イメージ図 -->
+            <div class="image-container">
+                <figure>
+                    <img src="IMG_3067.jpg" alt="使用機器：筋電図センサー" class="image-placeholder">
+                    <figcaption>使用機器：最新のワイヤレス筋電図センサーを使用します</figcaption>
+                </figure>
+            </div>
+
+            <div class="image-container">
+                <figure>
+                    <img src="Gemini_Generated_Image_ie1590ie1590ie15.png" alt="装着イメージ" class="image-placeholder">
+                    <figcaption>装着イメージ：手足にセンサーを装着して測定します</figcaption>
+                </figure>
+            </div>
+
+            <div class="faq-box">
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-calendar-alt"></i> 検査のタイミング</div>
+                    <div class="faq-a">
+                        検査は、<strong>初回、1か月後、3か月後、6か月後</strong>の計4回実施します。経過を追うことで、リハビリの効果をより詳細に分析できます。
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-user-shield"></i> 途中でやめることはできますか？</div>
+                    <div class="faq-a">
+                        はい、可能です。<strong>途中で検査を中止することもできます</strong>。その際は、ご希望に応じてデータの破棄も適切に行いますので、ご安心ください。
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-graduation-cap"></i> データの活用について</div>
+                    <div class="faq-a">
+                        母数が集まり次第、将来的には<strong>学会発表や論文報告</strong>など、リハビリテーション医学の発展のために活用させていただくことを視野に入れています。
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-question-circle"></i> 痛くありませんか？</div>
+                    <div class="faq-a">
+                        ご安心ください。電気を流す検査ではありません。シール（電極）を皮膚に貼って、体から出る信号を読み取るだけですので、<strong>痛みや不快感は全くありません。</strong>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-question-circle"></i> 服装はどうすればいいですか？</div>
+                    <div class="faq-a">
+                        足や腕にシールを貼らせていただきます。その際に裾をまくらせていただいたりと、ご協力をお願いします。<br>
+                        検査は裸足や装具着用、杖を使用した安全な状態で実施いたします。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: 検査の流れ -->
+        <section id="flow" class="card">
+            <div class="section-header">
+                <h2 class="section-title">当日の検査の流れ</h2>
+                <p style="margin-top: 10px;">所要時間は全部で20分～30分程度です</p>
+            </div>
+
+            <div class="step-list">
+                <!-- Step 1 -->
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title"><i class="fas fa-hourglass-start"></i> 準備（約5分）</div>
+                        <p class="step-desc">
+                            動きやすい状態になっていただき、足や肩などの測定したい筋肉の場所に、小さなシール（電極）を貼り付けます。<br>
+                            その後、簡単な動作確認を行います。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title"><i class="fas fa-walking"></i> 筋電図検査（約20～30分）</div>
+                        <p class="step-desc">以下の4つの動作を行っていただき、その時の筋肉の動きを記録します。</p>
+                        
+                        <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div style="background: #f9f9f9; padding: 10px; border-radius: 8px; text-align: center;">
+                                <i class="fas fa-walking" style="font-size: 1.5rem; color: var(--accent-color); display: block; margin-bottom: 5px;"></i>
+                                <strong>① 歩行チェック</strong><br>
+                                <small>いつもの速さと、早歩きで歩きます</small>
+                            </div>
+                            <div style="background: #f9f9f9; padding: 10px; border-radius: 8px; text-align: center;">
+                                <i class="fas fa-chair" style="font-size: 1.5rem; color: var(--accent-color); display: block; margin-bottom: 5px;"></i>
+                                <strong>② 立ち座り</strong><br>
+                                <small>椅子からの立ち上がりと方向転換</small>
+                            </div>
+                            <div style="background: #f9f9f9; padding: 10px; border-radius: 8px; text-align: center;">
+                                <i class="fas fa-arrows-alt-h" style="font-size: 1.5rem; color: var(--accent-color); display: block; margin-bottom: 5px;"></i>
+                                <strong>③ バランス</strong><br>
+                                <small>立ったまま手を前に伸ばします</small>
+                            </div>
+                            <div style="background: #f9f9f9; padding: 10px; border-radius: 8px; text-align: center;">
+                                <i class="fas fa-hand-paper" style="font-size: 1.5rem; color: var(--accent-color); display: block; margin-bottom: 5px;"></i>
+                                <strong>④ 腕の動き</strong><br>
+                                <small>腕を上げたり曲げたりします</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title"><i class="fas fa-comments"></i> 結果のご説明</div>
+                        <p class="step-desc">
+                            撮影した動画と波形データを見ながら、お体の状態やリハビリの進み具合について担当スタッフが詳しくご説明します。<br>
+                            現状を把握した上で、最適なセラピー内容を決定します。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="step-item">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title"><i class="fas fa-user-md"></i> 通常セラピー（約60～90分）</div>
+                        <p class="step-desc">
+                            検査結果をふまえ、<strong>いつものセラピー</strong>を行います。<br>
+                            検査で得られた客観的なデータを、その日のセラピー内容に即座に反映させ、より効果的なアプローチを実施します。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 検査風景イメージ（動画差し込み例） -->
+            <div class="image-container">
+                <figure>
+                    <!-- 
+                        【動画の設定方法】
+                        1. <video>タグを使用します。
+                        2. src="..." の部分に、表示したい動画ファイルのパス（ファイル名）を指定します。
+                        3. poster="..." は動画再生前に表示されるサムネイル画像です。
+                    -->
+                    <video controls playsinline webkit-playsinline preload="metadata" width="100%" style="display: block; background: #000; border-radius: 12px 12px 0 0;">
+                        <!-- iPhone/Safari対応のため、属性を追加しファイル名をエンコード -->
+                        <source src="%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%20(2).MP4" type="video/mp4">
+                        <p>動画を再生するには、videoタグをサポートしたブラウザが必要です。</p>
+                    </video>
+                    
+                    <figcaption>実際の検査・セラピー風景（※動画）</figcaption>
+                </figure>
+            </div>
+
+            <div style="text-align: center; margin-top: 2rem;">
+                <p style="font-weight: bold; color: var(--primary-color);">
+                    ご不明な点がありましたら、<br>担当スタッフまでお気軽にお声がけください。
+                </p>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        function checkPassword() {
+            const password = document.getElementById('password-input').value;
+            // ここにパスワードを設定します（例: strokelab）
+            if (password === 'strokelab') {
+                document.getElementById('password-overlay').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        }
+        // Enterキーでも送信できるようにする
+        document.getElementById('password-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+    </script>
+
+</body>
+</html>
