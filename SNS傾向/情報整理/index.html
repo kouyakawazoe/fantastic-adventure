@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor & Git 最強図解ガイド</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cursor-blue: #007acc;
+            --git-black: #24292e;
+            --bg-light: #f8fafc;
+            --text-dark: #1e293b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.7;
+            padding-bottom: 100px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--cursor-blue) 0%, var(--git-black) 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 0% 100%);
+        }
+
+        header h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        header p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: -50px auto 0;
+            padding: 0 20px;
+        }
+
+        /* 概念セクション */
+        .intro-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 80px;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .main-card.cursor { border-top: 8px solid var(--cursor-blue); }
+        .main-card.git { border-top: 8px solid var(--git-black); }
+
+        .icon-box {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--text-dark);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .cursor .badge { background: #e0f2fe; color: var(--cursor-blue); }
+        .git .badge { background: #f1f5f9; color: var(--git-black); }
+
+        /* 特徴リスト */
+        .feature-list {
+            list-style: none;
+            margin-top: 30px;
+        }
+
+        .feature-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            color: var(--success);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        /* ワークフロー図解 */
+        .workflow {
+            margin: 100px 0;
+            text-align: center;
+        }
+
+        .workflow h2 {
+            font-size: 2.5rem;
+            margin-bottom: 50px;
+        }
+
+        .steps-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .steps-container::before {
+            content: "";
+            position: absolute;
+            top: 45px;
+            left: 50px;
+            right: 50px;
+            height: 4px;
+            background: #e2e8f0;
+            z-index: 1;
+        }
+
+        .step-item {
+            flex: 1;
+            min-width: 200px;
+            background: white;
+            padding: 30px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 2;
+            border: 2px solid #e2e8f0;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: var(--cursor-blue);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: -50px auto 20px;
+            border: 4px solid var(--bg-light);
+        }
+
+        .step-item h3 { margin-bottom: 10px; color: var(--cursor-blue); }
+        .step-item p { font-size: 0.9rem; color: #64748b; }
+
+        /* メリット・デメリット対比 */
+        .comparison {
+            background: white;
+            padding: 60px;
+            border-radius: 30px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 80px;
+        }
+
+        .comp-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .comp-box h4 {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .merit-item { color: var(--success); font-weight: bold; margin-bottom: 15px; display: flex; align-items: flex-start; }
+        .demerit-item { color: var(--danger); font-weight: bold; margin-bottom: 15px; display: flex; align-items: flex-start; }
+
+        .merit-item span, .demerit-item span { margin-right: 10px; font-size: 1.2rem; }
+
+        /* コールトゥアクション */
+        .cta {
+            background: var(--git-black);
+            color: white;
+            padding: 60px;
+            border-radius: 30px;
+            text-align: center;
+        }
+
+        .cta h2 { color: white; margin-bottom: 20px; }
+        .cta p { font-size: 1.2rem; margin-bottom: 30px; opacity: 0.8; }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: var(--cursor-blue);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #005fa3;
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .intro-grid, .comp-grid { grid-template-columns: 1fr; }
+            .steps-container::before { display: none; }
+            .step-item { margin-bottom: 40px; }
+            header h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Cursor & Git <br>最強活用ロードマップ</h1>
+    <p>AIの爆速スピードと、タイムマシンの安心感をその手に。非エンジニアのスタッフが「今日から使える」知識を凝縮しました。</p>
+</header>
+
+<div class="container">
+    <!-- メインカードセクション -->
+    <div class="intro-grid">
+        <div class="main-card cursor">
+            <span class="badge">攻めのツール：AIエディタ</span>
+            <span class="icon-box">🤖</span>
+            <h2>Cursor</h2>
+            <p><strong>「あなたの思考を形にするAI秘書」</strong></p>
+            <p>言葉で伝えるだけで、複雑な計算やコードの作成、文章の整理を代行します。</p>
+            <ul class="feature-list">
+                <li>会話するだけで作業が完了</li>
+                <li>プロレベルのミスチェック</li>
+                <li>24時間365日、即レス対応</li>
+            </ul>
+        </div>
+
+        <div class="main-card git">
+            <span class="badge">守りのツール：履歴管理</span>
+            <span class="icon-box">⌛</span>
+            <h2>Git</h2>
+            <p><strong>「絶対に壊れない魔法のタイムマシン」</strong></p>
+            <p>全ての変更を記録し、失敗しても一瞬で「最高だったあの時」に戻せます。</p>
+            <ul class="feature-list">
+                <li>いつでも過去に戻れる安心感</li>
+                <li>複数人での「同時編集」を実現</li>
+                <li>変更の理由をメモとして残せる</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ワークフローセクション -->
+    <section class="workflow">
+        <h2>最強のルーティン 4Step</h2>
+        <div class="steps-container">
+            <div class="step-item">
+                <div class="step-number">1</div>
+                <h3>Pull (受け取る)</h3>
+                <span class="icon-box" style="font-size: 2rem;">📥</span>
+                <p>仲間の最新作業を取り込み、自分の環境を新しくします。</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">2</div>
+                <h3>Work (創る)</h3>
+                <span class="icon-box" style="font-size: 2rem;">✍️</span>
+                <p>Cursor(AI)を使い倒して、最高のパフォーマンスを発揮します。</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">3</div>
+                <h3>Commit (記録する)</h3>
+                <span class="icon-box" style="font-size: 2rem;">💾</span>
+                <p>作業の節目に「名前」をつけて、タイムマシンに保存します。</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">4</div>
+                <h3>Push (届ける)</h3>
+                <span class="icon-box" style="font-size: 2rem;">📤</span>
+                <p>完成した作業を仲間に共有し、プロジェクトを前進させます。</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- メリット・デメリット詳細 -->
+    <section class="comparison">
+        <h2>知っておくべき「真実」</h2>
+        <div class="comp-grid" style="margin-top: 40px;">
+            <div class="comp-box">
+                <h4>✨ メリット（いいところ）</h4>
+                <div class="merit-item"><span>🚀</span> 1時間かかっていた作業が5分で終わる</div>
+                <div class="merit-item"><span>💪</span> 自分の限界を超えたアウトプットが可能</div>
+                <div class="merit-item"><span>🛡️</span> 「壊しても大丈夫」という心理的安全性</div>
+                <div class="merit-item"><span>🌍</span> どこからでも最新データにアクセス</div>
+            </div>
+            <div class="comp-box">
+                <h4>⚠️ デメリット（注意点）</h4>
+                <div class="demerit-item"><span>🧐</span> AIがたまに自信満々に間違える</div>
+                <div class="demerit-item"><span>🧠</span> 思考を放棄するとスキルが身につかない</div>
+                <div class="demerit-item"><span>📛</span> 専門用語が最初だけ少し壁になる</div>
+                <div class="demerit-item"><span>💸</span> 一部の高度な機能は月額課金が必要</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 結論 -->
+    <div class="cta">
+        <h2>「失敗」は、もう怖くない。</h2>
+        <p>Cursor × Git をマスターすれば、あなたの仕事の常識が変わります。<br>まずは小さな一歩（Pull）から始めてみましょう。</p>
+        <a href="#" class="btn">今すぐ挑戦してみる</a>
+    </div>
+</div>
+
+<footer style="text-align: center; margin-top: 60px; color: #64748b; font-size: 0.9rem;">
+    <p>© 2026 Cursor & Git Mastery Team</p>
+</footer>
+
+</body>
+</html>
